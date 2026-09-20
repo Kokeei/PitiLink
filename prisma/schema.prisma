@@ -66,6 +66,12 @@ model User {
   telephone    String?
   role         Role
   photoUrl     String?
+
+  // Anti brute-force : verrouillage temporaire après plusieurs échecs de
+  // connexion consécutifs. Voir authorize() dans auth.ts.
+  tentativesEchoueesConnexion Int       @default(0)
+  verrouJusqua                DateTime?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
