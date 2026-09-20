@@ -74,6 +74,15 @@ export async function getJournalDuJour(enfantId: string, date?: Date) {
   });
 }
 
+export async function getActivitesRecentes(enfantId: string, limite = 10) {
+  return prisma.journalEvenement.findMany({
+    where: { enfantId, type: "ACTIVITE" },
+    include: { auteur: { select: { prenom: true, nom: true } } },
+    orderBy: { timestamp: "desc" },
+    take: limite,
+  });
+}
+
 export async function getPresenceDuJour(enfantId: string, date = new Date()) {
   return prisma.presence.findUnique({
     where: { enfantId_date: { enfantId, date: debutJournee(date) } },

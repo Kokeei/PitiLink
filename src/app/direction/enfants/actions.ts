@@ -7,31 +7,110 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { uploaderFichier } from "@/lib/blob";
 import { reinitialiserMotDePasse } from "@/lib/comptes";
-import type { StatutEnfant, TypeInfoImportante, LienFamilial, TypeDocument, AutorisationDiffusion } from "@/generated/prisma/enums";
+import type { StatutEnfant, TypeInfoImportante, LienFamilial, TypeDocument, AutorisationDiffusion, Sexe } from "@/generated/prisma/enums";
 
+/**
+ * Assistant d'ajout en une seule soumission (4 étapes côté formulaire :
+ * identité, accueil, responsable, santé/sécurité) : tout est créé dans une
+ * seule transaction pour ne jamais laisser une fiche à moitié créée.
+ */
 export async function creerEnfant(formData: FormData) {
   const user = await requireUser(ROLES_DIRECTION);
+  const garderieId = user.garderieId!;
+
+  // Étape 1 — Identité
   const prenom = formData.get("prenom") as string;
   const nom = formData.get("nom") as string;
   const dateNaissance = formData.get("dateNaissance") as string;
-  const groupeId = (formData.get("groupeId") as string) || undefined;
-
+  const sexe = (formData.get("sexe") as Sexe) || undefined;
   if (!prenom || !nom || !dateNaissance) return;
 
-  const enfant = await prisma.enfant.create({
-    data: {
-      garderieId: user.garderieId!,
-      prenom,
-      nom,
-      dateNaissance: new Date(dateNaissance),
-      groupeId,
-      dateInscription: new Date(),
-      statut: "ACTIF",
-    },
+  // Étape 2 — Accueil
+  const dateDebutAccueil = (formData.get("dateDebutAccueil") as string) || undefined;
+  const groupeId = (formData.get("groupeId") as string) || undefined;
+  const joursPresence = formData.getAll("joursPresence") as string[];
+  const horaireHabituel = (formData.get("horaireHabituel") as string) || undefined;
+
+  // Étape 3 — Responsable (facultatif)
+  const parentPrenom = (formData.get("parentPrenom") as string) || "";
+  const parentNom = (formData.get("parentNom") as string) || "";
+  const parentEmail = (formData.get("parentEmail") as string) || "";
+  const parentMotDePasse = (formData.get("parentMotDePasse") as string) || "";
+  const parentTelephone = (formData.get("parentTelephone") as string) || undefined;
+  const parentLien = (formData.get("parentLien") as LienFamilial) || "AUTRE";
+
+  // Étape 4 — Santé / sécurité (facultatif)
+  const allergeneIds = formData.getAll("allergeneIds") as string[];
+  const infoDescription = (formData.get("infoDescription") as string) || "";
+  const traitementNom = (formData.get("traitementNom") as string) || "";
+  const traitementDateFin = (formData.get("traitementDateFin") as string) || "";
+  const urgencePrenom = (formData.get("urgencePrenom") as string) || "";
+  const urgenceNom = (formData.get("urgenceNom") as string) || "";
+  const urgenceTelephone = (formData.get("urgenceTelephone") as string) || "";
+  const urgenceLien = (formData.get("urgenceLien") as string) || "Autre";
+
+  const enfantId = await prisma.$transaction(async (tx) => {
+    const enfant = await tx.enfant.create({
+      data: {
+        garderieId,
+        prenom,
+        nom,
+        dateNaissance: new Date(dateNaissance),
+        sexe,
+        groupeId,
+        dateInscription: new Date(),
+        dateDebutAccueil: dateDebutAccueil ? new Date(dateDebutAccueil) : undefined,
+        joursPresence,
+        horaireHabituel,
+        statut: "ACTIF",
+      },
+    });
+
+    if (parentPrenom && parentNom && parentEmail && parentMotDePasse) {
+      const passwordHash = await bcrypt.hash(parentMotDePasse, 10);
+      const parent = await tx.user.create({
+        data: { prenom: parentPrenom, nom: parentNom, email: parentEmail, telephone: parentTelephone, passwordHash, role: "PARENT", garderieId },
+      });
+      await tx.parentEnfant.create({
+        data: { enfantId: enfant.id, userId: parent.id, lien: parentLien, estContactUrgence: true },
+      });
+    }
+
+    if (allergeneIds.length > 0) {
+      const allergenesValides = await tx.allergene.findMany({ where: { id: { in: allergeneIds }, garderieId } });
+      if (allergenesValides.length > 0) {
+        await tx.allergieEnfant.createMany({
+          data: allergenesValides.map((a) => ({ enfantId: enfant.id, allergeneId: a.id })),
+        });
+        await tx.historiqueEnfant.createMany({
+          data: allergenesValides.map((a) => ({ enfantId: enfant.id, titre: `Allergie ajoutée : ${a.nom}` })),
+        });
+      }
+    }
+
+    if (infoDescription) {
+      await tx.infoImportante.create({
+        data: { enfantId: enfant.id, type: "AUTRE", titre: "Information importante", description: infoDescription, critique: false },
+      });
+    }
+
+    if (traitementNom && traitementDateFin) {
+      await tx.traitement.create({
+        data: { enfantId: enfant.id, nom: traitementNom, dateFin: new Date(traitementDateFin) },
+      });
+    }
+
+    if (urgencePrenom && urgenceNom && urgenceTelephone) {
+      await tx.contactUrgence.create({
+        data: { enfantId: enfant.id, prenom: urgencePrenom, nom: urgenceNom, telephone: urgenceTelephone, lien: urgenceLien, ordrePriorite: 1 },
+      });
+    }
+
+    return enfant.id;
   });
 
   revalidatePath("/direction/enfants");
-  redirect(`/direction/enfants/${enfant.id}`);
+  redirect(`/direction/enfants/${enfantId}`);
 }
 
 const MAX_PARENTS = 2;
@@ -50,6 +129,11 @@ export async function modifierFicheEnfant(enfantId: string, formData: FormData) 
   });
   if (!enfant) return;
 
+  const prenom = (formData.get("prenom") as string) || enfant.prenom;
+  const nom = (formData.get("nom") as string) || enfant.nom;
+  const dateNaissance = (formData.get("dateNaissance") as string) || undefined;
+  const sexe = (formData.get("sexe") as Sexe) || null;
+  const dateDebutAccueil = (formData.get("dateDebutAccueil") as string) || undefined;
   const statut = formData.get("statut") as StatutEnfant;
   const groupeId = (formData.get("groupeId") as string) || null;
   const adresse = (formData.get("adresse") as string) || null;
@@ -57,8 +141,28 @@ export async function modifierFicheEnfant(enfantId: string, formData: FormData) 
 
   await prisma.enfant.update({
     where: { id: enfantId },
-    data: { statut, groupeId, adresse, autorisationPhotos },
+    data: {
+      prenom,
+      nom,
+      dateNaissance: dateNaissance ? new Date(dateNaissance) : undefined,
+      sexe,
+      dateDebutAccueil: dateDebutAccueil ? new Date(dateDebutAccueil) : undefined,
+      statut,
+      groupeId,
+      adresse,
+      autorisationPhotos,
+    },
   });
+
+  if (groupeId !== enfant.groupeId) {
+    const [ancien, nouveau] = await Promise.all([
+      enfant.groupeId ? prisma.groupe.findUnique({ where: { id: enfant.groupeId } }) : null,
+      groupeId ? prisma.groupe.findUnique({ where: { id: groupeId } }) : null,
+    ]);
+    await prisma.historiqueEnfant.create({
+      data: { enfantId, titre: `Changement de groupe : ${ancien?.nom ?? "Sans groupe"} → ${nouveau?.nom ?? "Sans groupe"}` },
+    });
+  }
 
   for (const p of enfant.parents) {
     const prenom = formData.get(`parent_${p.id}_prenom`) as string | null;
@@ -189,6 +293,9 @@ export async function ajouterAllergieEnfant(enfantId: string, formData: FormData
     create: { enfantId, allergeneId, note },
     update: { note },
   });
+  await prisma.historiqueEnfant.create({
+    data: { enfantId, titre: `Allergie ajoutée : ${allergene.nom}` },
+  });
 
   revalidatePath(`/direction/enfants/${enfantId}`);
   revalidatePath("/direction/menus");
@@ -290,6 +397,7 @@ export async function ajouterDocument(enfantId: string, formData: FormData) {
   await prisma.document.create({
     data: { garderieId: enfant.garderieId, enfantId, nom, type, url },
   });
+  await prisma.historiqueEnfant.create({ data: { enfantId, titre: `Document ajouté : ${nom}` } });
   revalidatePath(`/direction/enfants/${enfantId}`);
   revalidatePath(`/parent/enfants/${enfantId}`);
 }
@@ -299,4 +407,82 @@ export async function supprimerDocument(enfantId: string, documentId: string) {
   await prisma.document.deleteMany({ where: { id: documentId, enfantId, garderieId: user.garderieId! } });
   revalidatePath(`/direction/enfants/${enfantId}`);
   revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+// --- En-tête de fiche : "Plus d'actions" ----------------------------------
+
+export async function changerStatutEnfant(enfantId: string, nouveauStatut: StatutEnfant) {
+  const user = await requireUser(ROLES_DIRECTION);
+  await prisma.enfant.updateMany({ where: { id: enfantId, garderieId: user.garderieId! }, data: { statut: nouveauStatut } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath("/direction/enfants");
+}
+
+// --- Onglet Général : Accueil (jours de présence, horaires) ---------------
+
+export async function modifierAccueil(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const joursPresence = formData.getAll("joursPresence") as string[];
+  const horaireHabituel = (formData.get("horaireHabituel") as string) || null;
+
+  await prisma.enfant.updateMany({
+    where: { id: enfantId, garderieId: user.garderieId! },
+    data: { joursPresence, horaireHabituel },
+  });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+// --- Onglet Général : Personnes autorisées ---------------------------------
+
+export async function ajouterPersonneAutorisee(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const prenom = formData.get("prenom") as string;
+  const nom = formData.get("nom") as string;
+  const lien = formData.get("lien") as string;
+  const telephone = (formData.get("telephone") as string) || undefined;
+  const ponctuelle = formData.get("ponctuelle") === "on";
+  if (!prenom || !nom || !lien) return;
+
+  const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
+  if (!enfant) return;
+
+  await prisma.personneAutorisee.create({ data: { enfantId, prenom, nom, lien, telephone, ponctuelle } });
+  await prisma.historiqueEnfant.create({ data: { enfantId, titre: `Personne autorisée ajoutée : ${prenom} ${nom}` } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+export async function supprimerPersonneAutorisee(enfantId: string, personneId: string) {
+  const user = await requireUser(ROLES_DIRECTION);
+  await prisma.personneAutorisee.deleteMany({ where: { id: personneId, enfant: { id: enfantId, garderieId: user.garderieId! } } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+// --- Onglet Santé : traitement, médecin traitant ---------------------------
+
+export async function ajouterTraitement(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const nom = formData.get("nom") as string;
+  const dateFin = formData.get("dateFin") as string;
+  const note = (formData.get("note") as string) || undefined;
+  if (!nom || !dateFin) return;
+
+  const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
+  if (!enfant) return;
+
+  await prisma.traitement.create({ data: { enfantId, nom, dateFin: new Date(dateFin), note } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+export async function supprimerTraitement(enfantId: string, traitementId: string) {
+  const user = await requireUser(ROLES_DIRECTION);
+  await prisma.traitement.deleteMany({ where: { id: traitementId, enfant: { id: enfantId, garderieId: user.garderieId! } } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+export async function modifierMedecin(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const medecinNom = (formData.get("medecinNom") as string) || null;
+  const medecinTelephone = (formData.get("medecinTelephone") as string) || null;
+  await prisma.enfant.updateMany({ where: { id: enfantId, garderieId: user.garderieId! }, data: { medecinNom, medecinTelephone } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
 }
