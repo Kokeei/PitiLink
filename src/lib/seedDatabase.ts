@@ -114,10 +114,15 @@ export async function seedDatabase(prisma: PrismaClient) {
       prenom: "Kiivai",
       nom: "Wong",
       dateNaissance: new Date("2025-10-22"),
+      sexe: "GARCON",
       dateInscription: new Date("2025-12-01"),
       dateDebutAccueil: new Date("2026-01-05"),
       statut: "ACTIF",
       autorisationPhotos: "AUTORISEE",
+      joursPresence: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+      horaireHabituel: "07h30 - 18h30",
+      medecinNom: "Dr Teahui Robin",
+      medecinTelephone: "87 65 43 21",
     },
   });
 
@@ -128,10 +133,13 @@ export async function seedDatabase(prisma: PrismaClient) {
       prenom: "Emma",
       nom: "Lefevre",
       dateNaissance: new Date("2025-05-14"),
+      sexe: "FILLE",
       dateInscription: new Date("2025-08-01"),
       dateDebutAccueil: new Date("2025-09-01"),
       statut: "ACTIF",
       autorisationPhotos: "AUTORISEE",
+      joursPresence: ["Lundi", "Mardi", "Jeudi", "Vendredi"],
+      horaireHabituel: "08h00 - 17h30",
     },
   });
 
@@ -142,9 +150,12 @@ export async function seedDatabase(prisma: PrismaClient) {
       prenom: "Noah",
       nom: "Girard",
       dateNaissance: new Date("2023-11-02"),
+      sexe: "GARCON",
       dateInscription: new Date("2024-01-01"),
       dateDebutAccueil: new Date("2024-02-01"),
       statut: "ACTIF",
+      joursPresence: ["Lundi", "Mercredi", "Vendredi"],
+      horaireHabituel: "09h00 - 16h00",
     },
   });
 
@@ -184,6 +195,25 @@ export async function seedDatabase(prisma: PrismaClient) {
       description: "Utiliser exclusivement le lait infantile fourni par les parents.",
       critique: true,
     },
+  });
+
+  // Un traitement déjà terminé (illustre le passage automatique vers
+  // l'historique une fois la date de fin dépassée) et l'historique associé.
+  await prisma.traitement.create({
+    data: {
+      enfantId: kiivai.id,
+      nom: "Sirop antibiotique",
+      dateDebut: new Date(Date.now() - 14 * 86400000),
+      dateFin: new Date(Date.now() - 7 * 86400000),
+      note: "3 prises par jour, prescrit après une otite",
+    },
+  });
+
+  await prisma.historiqueEnfant.createMany({
+    data: [
+      { enfantId: kiivai.id, date: new Date(Date.now() - 15 * 86400000), titre: "Allergie ajoutée : Protéines de lait de vache" },
+      { enfantId: kiivai.id, date: new Date(Date.now() - 5 * 86400000), titre: "Document ajouté : Certificat médical" },
+    ],
   });
 
   // ---- Module Menus : allergènes, aliments, types de repas, menus --------

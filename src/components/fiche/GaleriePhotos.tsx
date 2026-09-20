@@ -28,7 +28,7 @@ export function GaleriePhotos({
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {autorisation === "REFUSEE"
             ? "⚠️ La famille a refusé la diffusion des photos de cet enfant — aucune photo ne peut être ajoutée."
-            : "⚠️ Autorisation de diffusion des photos non renseignée — à configurer dans l'onglet Informations avant de pouvoir ajouter des photos."}
+            : "⚠️ Autorisation de diffusion des photos non renseignée — à configurer dans l'onglet Général avant de pouvoir ajouter des photos."}
         </p>
       )}
 

@@ -155,10 +155,19 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 
 **Direction** (`/direction`)
 - Tableau de bord (présences du jour, alertes « à traiter »)
-- Fiche enfant à onglets (Vue d'ensemble, Informations, Compétences, Documents, Historique) :
-  gestion de deux parents maximum (rôle libre papa/maman/tuteur, indépendant l'un de l'autre —
-  couvre les familles homoparentales), contact d'urgence principal, adresse, photo de profil,
-  galerie de souvenirs, documents (upload)
+- Module Enfants (`/direction/enfants`) : liste avec recherche/tri/pagination instantanés par
+  colonne (prénom, nom, groupe, statut, allergies), export CSV, panneau de filtres dédié sur
+  mobile ; ajout d'un enfant via un assistant en 4 étapes (identité, accueil, responsable,
+  santé/sécurité) créées en une seule transaction ; fiche à en-tête compact (photo, âge,
+  groupe, statut, pastille d'allergie) et 7 onglets — **Général** (informations, responsables,
+  personnes autorisées, jours/horaires d'accueil), **Santé** (allergies, traitement en cours
+  avec bascule automatique vers l'historique à l'échéance, informations importantes, documents
+  santé, contact d'urgence + médecin traitant), **Suivi quotidien** (journal par jour
+  sélectionnable), **Menus** (menu réellement applicable à l'enfant sur la semaine, avec origine
+  et alerte allergène), **Activités** (compétences, activités récentes, galerie de souvenirs),
+  **Documents** (regroupés Administratif / Santé / Autres), **Historique** (événements marquants,
+  générés automatiquement). Menu « Plus d'actions » pour changer le statut (suspendre/réactiver/
+  archiver) sans encombrer l'en-tête.
 - Droit à l'image : autorisation de diffusion des photos par enfant (non renseignée / autorisée /
   refusée par la famille), gérée par la direction. Tant qu'elle n'est pas explicitement
   « autorisée », l'ajout de photo (profil ou souvenir) est bloqué côté serveur pour tous les

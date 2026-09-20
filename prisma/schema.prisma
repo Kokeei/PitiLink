@@ -121,6 +121,11 @@ model Groupe {
   @@map("groupes")
 }
 
+enum Sexe {
+  GARCON
+  FILLE
+}
+
 enum StatutEnfant {
   ACTIF
   SUSPENDU
@@ -146,10 +151,22 @@ model Enfant {
   nom              String
   photoUrl         String?
   dateNaissance    DateTime
+  sexe             Sexe?
   dateInscription  DateTime?
   dateDebutAccueil DateTime?
   statut           StatutEnfant @default(ACTIF)
   adresse          String?
+
+  // Accueil : jours de la semaine habituels ("Lundi".."Vendredi") et
+  // horaires en texte libre (ex. "07h30 - 18h30"), même convention que
+  // Garderie.horaires — pas de moteur de planning dans cette itération.
+  joursPresence   String[] @default([])
+  horaireHabituel String?
+
+  // Médecin traitant : simple champ texte, distinct des contacts d'urgence
+  // (ContactUrgence) qui restent gérés côté famille.
+  medecinNom       String?
+  medecinTelephone String?
 
   // Droit à l'image (RGPD / mineurs) : tant que le statut n'est pas
   // explicitement AUTORISEE, aucune photo ne peut être ajoutée à la fiche.
@@ -172,6 +189,8 @@ model Enfant {
   acquisitionsCompetence AcquisitionCompetence[]
   allergies              AllergieEnfant[]
   menuEntrees            MenuEntree[]
+  traitements            Traitement[]
+  historique             HistoriqueEnfant[]
 
   @@index([garderieId])
   @@index([groupeId])
@@ -267,6 +286,39 @@ model AllergieEnfant {
   @@unique([enfantId, allergeneId])
   @@index([enfantId])
   @@map("allergies_enfant")
+}
+
+// Traitement médical ponctuel (nom + date de fin). "En cours" / "terminé" est
+// calculé à l'affichage à partir de dateFin — pas de statut stocké séparément
+// pour ne jamais désynchroniser les deux (§ onglet Santé du cahier des charges).
+model Traitement {
+  id        String    @id @default(cuid())
+  enfantId  String
+  enfant    Enfant    @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  nom       String
+  dateDebut DateTime?
+  dateFin   DateTime
+  note      String?
+  createdAt DateTime  @default(now())
+
+  @@index([enfantId])
+  @@map("traitements")
+}
+
+// Journal des événements marquants de la fiche (changement de groupe,
+// allergie ajoutée, document ajouté...), écrit par les actions concernées.
+// Volontairement minimal : un simple titre horodaté, pas un système d'audit
+// générique — seuls les événements que l'onglet Historique doit montrer.
+model HistoriqueEnfant {
+  id          String   @id @default(cuid())
+  enfantId    String
+  enfant      Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  titre       String
+  description String?
+
+  @@index([enfantId])
+  @@map("historique_enfant")
 }
 
 // ---------------------------------------------------------------------------
