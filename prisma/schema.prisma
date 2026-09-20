@@ -124,6 +124,7 @@ model Enfant {
   dateInscription  DateTime?
   dateDebutAccueil DateTime?
   statut           StatutEnfant @default(ACTIF)
+  adresse          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -153,12 +154,13 @@ enum LienFamilial {
 }
 
 model ParentEnfant {
-  id       String       @id @default(cuid())
-  enfantId String
-  enfant   Enfant       @relation(fields: [enfantId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lien     LienFamilial @default(AUTRE)
+  id                String       @id @default(cuid())
+  enfantId          String
+  enfant            Enfant       @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lien              LienFamilial @default(AUTRE)
+  estContactUrgence Boolean      @default(false)
 
   @@unique([enfantId, userId])
   @@map("parents_enfants")
