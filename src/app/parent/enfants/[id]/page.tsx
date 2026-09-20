@@ -5,6 +5,7 @@ import { getJournalDuJour } from "@/lib/data";
 import { formatDate, formatHeure, debutJournee } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, parseJson, resumeEvenement } from "@/lib/journal";
 import { getBadgesCompetences, getAcquisitionsEnfant } from "@/lib/competences";
+import { lundiDeLaSemaine, resoudreMenuEnfant, type EntreeMenu } from "@/lib/menus";
 import { EnTeteEnfant } from "@/components/fiche/EnTeteEnfant";
 import { TuilesAujourdhui } from "@/components/fiche/TuilesAujourdhui";
 import { BadgesCompetences } from "@/components/fiche/BadgesCompetences";
@@ -41,9 +42,48 @@ export default async function FicheEnfantParentPage({
 
   const dateAffichee = dateParam ? new Date(dateParam) : new Date();
   const journal = await getJournalDuJour(id, dateAffichee);
-  const menu = await prisma.menuJour.findUnique({
-    where: { garderieId_date: { garderieId: enfant.garderieId, date: debutJournee(dateAffichee) } },
-  });
+
+  const jourSemaine = (dateAffichee.getDay() + 6) % 7; // 0 = lundi ... 6 = dimanche
+  const semaineMenu =
+    jourSemaine < 5
+      ? await prisma.semaineMenu.findUnique({
+          where: { garderieId_dateDebut: { garderieId: enfant.garderieId, dateDebut: lundiDeLaSemaine(dateAffichee) } },
+          include: {
+            entrees: { include: { composants: { include: { aliment: true, remplaceAliment: true } } } },
+          },
+        })
+      : null;
+  const typesRepasMenu = semaineMenu
+    ? await prisma.typeRepas.findMany({ where: { garderieId: enfant.garderieId, actif: true }, orderBy: { ordre: "asc" } })
+    : [];
+  const menusDuJour =
+    semaineMenu && semaineMenu.statut !== "BROUILLON"
+      ? (() => {
+          const entreesResolues: EntreeMenu[] = semaineMenu.entrees.map((e) => ({
+            id: e.id,
+            jourSemaine: e.jourSemaine,
+            typeRepasId: e.typeRepasId,
+            portee: e.portee,
+            groupeId: e.groupeId,
+            enfantId: e.enfantId,
+            note: e.note,
+            composants: e.composants.map((c) => ({
+              id: c.id,
+              alimentId: c.alimentId,
+              alimentNom: c.aliment.nom,
+              ordre: c.ordre,
+              remplaceAlimentNom: c.remplaceAliment?.nom ?? null,
+              motifRemplacement: c.motifRemplacement,
+            })),
+          }));
+          return typesRepasMenu
+            .map((type) => ({
+              typeRepasNom: type.nom,
+              resolu: resoudreMenuEnfant(entreesResolues, { id: enfant.id, groupeId: enfant.groupeId }, jourSemaine, type.id),
+            }))
+            .filter((m) => m.resolu !== null);
+        })()
+      : [];
 
   const veille = new Date(dateAffichee);
   veille.setDate(veille.getDate() - 1);
@@ -99,12 +139,22 @@ export default async function FicheEnfantParentPage({
 
         {estAujourdhui && <TuilesAujourdhui journal={journal} />}
 
-        {menu && (
+        {menusDuJour.length > 0 && (
           <div className="rounded-xl bg-orange-50 p-3 text-sm">
-            <p className="font-medium text-orange-800">🍽️ Menu du jour</p>
-            <p className="text-orange-900">
-              {[menu.petitDejeuner, menu.dejeuner, menu.gouter].filter(Boolean).join(" · ")}
-            </p>
+            <p className="mb-1 font-medium text-orange-800">🍽️ Menu du jour</p>
+            <ul className="space-y-1">
+              {menusDuJour.map(({ typeRepasNom, resolu }) => (
+                <li key={typeRepasNom} className="text-orange-900">
+                  <span className="font-medium">{typeRepasNom} :</span>{" "}
+                  {resolu!.composants.map((c) => c.alimentNom).join(", ")}
+                  {resolu!.portee !== "GENERAL" && (
+                    <span className="ml-1 text-xs text-orange-600">
+                      {resolu!.portee === "INDIVIDUEL" ? "👶 adapté" : "🏷️ groupe"}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

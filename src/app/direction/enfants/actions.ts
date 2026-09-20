@@ -167,6 +167,40 @@ export async function supprimerInfoImportante(enfantId: string, infoId: string) 
   revalidatePath(`/direction/enfants/${enfantId}`);
 }
 
+/**
+ * Allergie structurée (liée à un allergène configurable) : c'est celle-ci
+ * que le module Menus utilise pour détecter automatiquement les conflits
+ * alimentaires. Distincte des informations importantes en texte libre.
+ */
+export async function ajouterAllergieEnfant(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const allergeneId = formData.get("allergeneId") as string;
+  const note = (formData.get("note") as string) || undefined;
+  if (!allergeneId) return;
+
+  const [enfant, allergene] = await Promise.all([
+    prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } }),
+    prisma.allergene.findFirst({ where: { id: allergeneId, garderieId: user.garderieId! } }),
+  ]);
+  if (!enfant || !allergene) return;
+
+  await prisma.allergieEnfant.upsert({
+    where: { enfantId_allergeneId: { enfantId, allergeneId } },
+    create: { enfantId, allergeneId, note },
+    update: { note },
+  });
+
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath("/direction/menus");
+}
+
+export async function supprimerAllergieEnfant(enfantId: string, allergieId: string) {
+  const user = await requireUser(ROLES_DIRECTION);
+  await prisma.allergieEnfant.deleteMany({ where: { id: allergieId, enfant: { garderieId: user.garderieId! } } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath("/direction/menus");
+}
+
 export async function corrigerAcquisition(enfantId: string, acquisitionId: string, formData: FormData) {
   const user = await requireUser(ROLES_DIRECTION);
   const nouvelleNote = (formData.get("note") as string) || null;
