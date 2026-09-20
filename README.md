@@ -11,7 +11,9 @@ modèle **prévu → réel**.
 
 - **Next.js 16** (App Router, React 19, TypeScript, Turbopack)
 - **PostgreSQL** + **Prisma ORM 7** (driver adapter `@prisma/adapter-pg`)
-- **NextAuth v5** (Credentials, sessions JWT, multi-tenant par garderie, rôles)
+- **NextAuth v5** (Credentials, sessions JWT, multi-tenant par garderie, rôles). Verrouillage
+  temporaire du compte après 5 échecs de connexion consécutifs (15 minutes), stocké en base
+  pour rester efficace en serverless (pas de mémoire partagée entre invocations).
 - **TailwindCSS v4** — sidebar + onglets + tuiles colorées, mobile-first (gros boutons,
   pictogrammes)
 - **Vercel Blob** (`@vercel/blob`) — upload des photos (profil enfant, souvenirs, documents)
