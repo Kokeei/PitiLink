@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { lundiDeLaSemaine } from "@/lib/menus";
 
 export const MOT_DE_PASSE_DEMO = "Password123!";
 
@@ -185,6 +186,170 @@ export async function seedDatabase(prisma: PrismaClient) {
     },
   });
 
+  // ---- Module Menus : allergènes, aliments, types de repas, menus --------
+
+  const [allergeneLait, allergeneGluten] = await Promise.all([
+    prisma.allergene.create({ data: { garderieId: garderie.id, nom: "Protéines de lait de vache" } }),
+    prisma.allergene.create({ data: { garderieId: garderie.id, nom: "Gluten" } }),
+  ]);
+  await prisma.allergene.createMany({
+    data: [
+      { garderieId: garderie.id, nom: "Œuf" },
+      { garderieId: garderie.id, nom: "Arachide" },
+      { garderieId: garderie.id, nom: "Fruits à coque" },
+    ],
+  });
+
+  await prisma.allergieEnfant.create({
+    data: { enfantId: kiivai.id, allergeneId: allergeneLait.id, note: "Lait infantile fourni par les parents" },
+  });
+  await prisma.allergieEnfant.create({
+    data: { enfantId: emma.id, allergeneId: allergeneGluten.id },
+  });
+
+  const [
+    alimentPoisson,
+    alimentRiz,
+    alimentLegumes,
+    alimentPoulet,
+    alimentPuree,
+    alimentLait,
+    alimentCompote,
+    alimentYaourt,
+    alimentFruit,
+    alimentPain,
+  ] = await Promise.all([
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Poisson", categorieAlimentaire: "Protéine" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Riz", categorieAlimentaire: "Féculent" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Légumes", categorieAlimentaire: "Légume" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Poulet", categorieAlimentaire: "Protéine" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Purée", categorieAlimentaire: "Légume" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Lait", categorieAlimentaire: "Laitage" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Compote", categorieAlimentaire: "Fruit" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Yaourt", categorieAlimentaire: "Laitage" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Fruit", categorieAlimentaire: "Fruit" } }),
+    prisma.aliment.create({ data: { garderieId: garderie.id, nom: "Pain", categorieAlimentaire: "Féculent" } }),
+  ]);
+
+  await prisma.alimentAllergene.createMany({
+    data: [
+      { alimentId: alimentLait.id, allergeneId: allergeneLait.id },
+      { alimentId: alimentYaourt.id, allergeneId: allergeneLait.id },
+      { alimentId: alimentPain.id, allergeneId: allergeneGluten.id },
+    ],
+  });
+
+  const [typePetitDejeuner, typeDejeuner, typeGouter] = await Promise.all([
+    prisma.typeRepas.create({ data: { garderieId: garderie.id, nom: "Petit-déjeuner", ordre: 0 } }),
+    prisma.typeRepas.create({ data: { garderieId: garderie.id, nom: "Déjeuner", ordre: 1 } }),
+    prisma.typeRepas.create({ data: { garderieId: garderie.id, nom: "Goûter", ordre: 2 } }),
+  ]);
+
+  const semaine = await prisma.semaineMenu.create({
+    data: { garderieId: garderie.id, dateDebut: lundiDeLaSemaine(), statut: "PUBLIE" },
+  });
+
+  // Menu général — lundi (jourSemaine 0)
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 0,
+      typeRepasId: typePetitDejeuner.id,
+      portee: "GENERAL",
+      composants: { create: [{ alimentId: alimentLait.id, ordre: 0 }, { alimentId: alimentCompote.id, ordre: 1 }] },
+    },
+  });
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 0,
+      typeRepasId: typeDejeuner.id,
+      portee: "GENERAL",
+      composants: {
+        create: [
+          { alimentId: alimentPoisson.id, ordre: 0 },
+          { alimentId: alimentRiz.id, ordre: 1 },
+          { alimentId: alimentLegumes.id, ordre: 2 },
+        ],
+      },
+    },
+  });
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 0,
+      typeRepasId: typeGouter.id,
+      portee: "GENERAL",
+      composants: { create: [{ alimentId: alimentYaourt.id, ordre: 0 }, { alimentId: alimentFruit.id, ordre: 1 }] },
+    },
+  });
+
+  // Menu catégorie « Bébés » — lundi midi : remplace poisson+légumes par poulet+purée
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 0,
+      typeRepasId: typeDejeuner.id,
+      portee: "CATEGORIE",
+      groupeId: groupeBebes.id,
+      composants: {
+        create: [
+          { alimentId: alimentPoulet.id, ordre: 0, remplaceAlimentId: alimentPoisson.id, motifRemplacement: "Adapté à l'âge (bébés)" },
+          { alimentId: alimentPuree.id, ordre: 1, remplaceAlimentId: alimentLegumes.id, motifRemplacement: "Adapté à l'âge (bébés)" },
+        ],
+      },
+    },
+  });
+
+  // Menu individuel — Kiivai (allergie aux protéines de lait de vache) : lundi goûter
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 0,
+      typeRepasId: typeGouter.id,
+      portee: "INDIVIDUEL",
+      enfantId: kiivai.id,
+      note: "Allergie aux protéines de lait de vache",
+      composants: {
+        create: [
+          { alimentId: alimentCompote.id, ordre: 0, remplaceAlimentId: alimentYaourt.id, motifRemplacement: "Allergie aux protéines de lait de vache" },
+          { alimentId: alimentFruit.id, ordre: 1 },
+        ],
+      },
+    },
+  });
+
+  // Menu général — mardi : petit-déjeuner avec du pain (gluten), volontairement
+  // sans adaptation pour Emma (allergique au gluten) afin d'illustrer l'alerte
+  // allergène non résolue dans la vue « Alertes ».
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 1,
+      typeRepasId: typePetitDejeuner.id,
+      portee: "GENERAL",
+      composants: { create: [{ alimentId: alimentPain.id, ordre: 0 }, { alimentId: alimentLait.id, ordre: 1 }] },
+    },
+  });
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 1,
+      typeRepasId: typeDejeuner.id,
+      portee: "GENERAL",
+      composants: { create: [{ alimentId: alimentPoulet.id, ordre: 0 }, { alimentId: alimentRiz.id, ordre: 1 }] },
+    },
+  });
+  await prisma.menuEntree.create({
+    data: {
+      semaineId: semaine.id,
+      jourSemaine: 1,
+      typeRepasId: typeGouter.id,
+      portee: "GENERAL",
+      composants: { create: [{ alimentId: alimentCompote.id, ordre: 0 }] },
+    },
+  });
+
   await prisma.personneAutorisee.create({
     data: {
       enfantId: kiivai.id,
@@ -240,16 +405,6 @@ export async function seedDatabase(prisma: PrismaClient) {
       { garderieId: garderie.id, nom: "Extérieur / promenade", categorie: "Extérieur" },
       { garderieId: garderie.id, nom: "Éveil musical", categorie: "Éveil" },
     ],
-  });
-
-  await prisma.menuJour.create({
-    data: {
-      garderieId: garderie.id,
-      date: aujourdhui,
-      petitDejeuner: "Lait + compote",
-      dejeuner: "Poulet + riz",
-      gouter: "Yaourt + fruit",
-    },
   });
 
   const heure = (h: number, m: number) => {

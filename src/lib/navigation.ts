@@ -14,6 +14,7 @@ export const LIENS_DIRECTION: LienNav[] = [
 export const LIENS_PRO: LienNav[] = [
   { href: "/pro", label: "Aujourd'hui", icone: "🏠" },
   { href: "/pro/groupe", label: "Groupe", icone: "👥" },
+  { href: "/pro/menus", label: "Menus", icone: "🍽️" },
 ];
 
 export const LIENS_PARENT: LienNav[] = [

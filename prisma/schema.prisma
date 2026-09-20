@@ -45,7 +45,6 @@ model Garderie {
   groupes                Groupe[]
   enfants                Enfant[]
   activites              Activite[]
-  menusJour              MenuJour[]
   evenements             Evenement[]
   journalEvenements      JournalEvenement[]
   documents              Document[]
@@ -53,6 +52,10 @@ model Garderie {
   categoriesCompetences  CategorieCompetence[]
   competences            Competence[]
   acquisitionsCompetence AcquisitionCompetence[]
+  allergenes             Allergene[]
+  aliments               Aliment[]
+  typesRepas             TypeRepas[]
+  semainesMenu           SemaineMenu[]
 
   @@map("garderies")
 }
@@ -112,6 +115,7 @@ model Groupe {
   enfants                Enfant[]
   affectations           Affectation[]
   acquisitionsCompetence AcquisitionCompetence[]
+  menuEntrees            MenuEntree[]
 
   @@index([garderieId])
   @@map("groupes")
@@ -166,6 +170,8 @@ model Enfant {
   documents              Document[]
   photos                 Photo[]
   acquisitionsCompetence AcquisitionCompetence[]
+  allergies              AllergieEnfant[]
+  menuEntrees            MenuEntree[]
 
   @@index([garderieId])
   @@index([groupeId])
@@ -244,6 +250,23 @@ model InfoImportante {
 
   @@index([enfantId])
   @@map("infos_importantes")
+}
+
+// Allergie structurée (liée à un allergène configurable), distincte de
+// InfoImportante (note libre) : c'est celle-ci que le module Menus utilise
+// pour détecter automatiquement les conflits alimentaires.
+model AllergieEnfant {
+  id          String    @id @default(cuid())
+  enfantId    String
+  enfant      Enfant    @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  allergeneId String
+  allergene   Allergene @relation(fields: [allergeneId], references: [id], onDelete: Cascade)
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([enfantId, allergeneId])
+  @@index([enfantId])
+  @@map("allergies_enfant")
 }
 
 // ---------------------------------------------------------------------------
@@ -387,19 +410,142 @@ model Activite {
   @@map("activites")
 }
 
-model MenuJour {
-  id            String   @id @default(cuid())
-  garderieId    String
-  garderie      Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
-  date          DateTime
-  petitDejeuner String?
-  dejeuner      String?
-  gouter        String?
-  autre         String?
-  createdAt     DateTime @default(now())
+// ---------------------------------------------------------------------------
+// Menus alimentaires — héritage individuel > catégorie (Groupe) > général
+//
+// Une MenuEntree représente le menu d'UN repas (jour de semaine × typeRepas)
+// pour UNE portée : générale (groupeId=null, enfantId=null), catégorie
+// (groupeId renseigné) ou individuelle (enfantId renseigné). La résolution
+// du menu réellement applicable à un enfant se fait en application (voir
+// src/lib/menus.ts), pas en base : à service égal, l'entrée la plus
+// spécifique disponible l'emporte.
+// ---------------------------------------------------------------------------
 
-  @@unique([garderieId, date])
-  @@map("menus_jour")
+model Allergene {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  nom        String
+  actif      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  aliments        AlimentAllergene[]
+  allergiesEnfant AllergieEnfant[]
+
+  @@unique([garderieId, nom])
+  @@index([garderieId])
+  @@map("allergenes")
+}
+
+model Aliment {
+  id                   String   @id @default(cuid())
+  garderieId           String
+  garderie             Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  nom                  String
+  categorieAlimentaire String?
+  description          String?
+  actif                Boolean  @default(true)
+  createdAt            DateTime @default(now())
+
+  allergenes         AlimentAllergene[]
+  composants         MenuComposant[]        @relation("AlimentServi")
+  remplacementsDe     MenuComposant[]        @relation("AlimentRemplace")
+
+  @@index([garderieId])
+  @@map("aliments")
+}
+
+model AlimentAllergene {
+  id          String    @id @default(cuid())
+  alimentId   String
+  aliment     Aliment   @relation(fields: [alimentId], references: [id], onDelete: Cascade)
+  allergeneId String
+  allergene   Allergene @relation(fields: [allergeneId], references: [id], onDelete: Cascade)
+
+  @@unique([alimentId, allergeneId])
+  @@map("aliment_allergenes")
+}
+
+model TypeRepas {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  nom        String
+  ordre      Int      @default(0)
+  actif      Boolean  @default(true)
+
+  entrees MenuEntree[]
+
+  @@unique([garderieId, nom])
+  @@index([garderieId])
+  @@map("types_repas")
+}
+
+enum StatutMenu {
+  BROUILLON
+  PUBLIE
+  ARCHIVE
+}
+
+model SemaineMenu {
+  id         String     @id @default(cuid())
+  garderieId String
+  garderie   Garderie   @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  dateDebut  DateTime // lundi de la semaine, minuit
+  statut     StatutMenu @default(BROUILLON)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  entrees MenuEntree[]
+
+  @@unique([garderieId, dateDebut])
+  @@index([garderieId])
+  @@map("semaines_menu")
+}
+
+enum PorteeMenu {
+  GENERAL
+  CATEGORIE
+  INDIVIDUEL
+}
+
+model MenuEntree {
+  id          String      @id @default(cuid())
+  semaineId   String
+  semaine     SemaineMenu @relation(fields: [semaineId], references: [id], onDelete: Cascade)
+  jourSemaine Int // 0 = lundi ... 4 = vendredi
+  typeRepasId String
+  typeRepas   TypeRepas   @relation(fields: [typeRepasId], references: [id])
+  portee      PorteeMenu
+  groupeId    String? // renseigné uniquement si portee = CATEGORIE
+  groupe      Groupe?     @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+  enfantId    String? // renseigné uniquement si portee = INDIVIDUEL
+  enfant      Enfant?     @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  note        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  composants MenuComposant[]
+
+  @@index([semaineId, jourSemaine, typeRepasId])
+  @@index([groupeId])
+  @@index([enfantId])
+  @@map("menu_entrees")
+}
+
+model MenuComposant {
+  id                String     @id @default(cuid())
+  menuEntreeId      String
+  menuEntree        MenuEntree @relation(fields: [menuEntreeId], references: [id], onDelete: Cascade)
+  alimentId         String
+  aliment           Aliment    @relation("AlimentServi", fields: [alimentId], references: [id])
+  remplaceAlimentId String? // substitution : quel aliment (du menu moins spécifique) celui-ci remplace
+  remplaceAliment   Aliment?   @relation("AlimentRemplace", fields: [remplaceAlimentId], references: [id])
+  motifRemplacement String?
+  ordre             Int        @default(0)
+
+  @@index([menuEntreeId])
+  @@map("menu_composants")
 }
 
 // ---------------------------------------------------------------------------

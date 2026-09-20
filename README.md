@@ -165,13 +165,34 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
   rôles (direction et professionnels), pas seulement masqué côté interface.
 - Gestion des groupes, des professionnels (création de compte), des affectations
   (y compris réaffectation en cas d'absence d'une tatie)
-- Gestion des menus du jour
 - Gestion du catalogue de compétences (catégories, âges indicatifs, activation) et
   correction/suppression des acquisitions enregistrées
 - Absences : liste consolidée avec incidence financière calculée (décomptée/facturée),
   règles paramétrables par garderie (préavis minimum, traitement de la maladie avec/sans
   certificat), annulation d'une absence. Il n'y a pas de « validation » manuelle : la règle
   s'applique automatiquement, chaque garderie ayant son propre fonctionnement.
+
+**Menus** (`/direction/menus`, `/pro/menus`, onglet menu de la fiche parent)
+- Trois niveaux de menu par semaine : général (garderie), par catégorie (groupe), individuel
+  (enfant), avec résolution automatique individuel > catégorie > général et repli sur le
+  niveau supérieur quand rien n'est défini
+- Grille hebdomadaire (types de repas configurables × Lundi-Vendredi) : édition en liste de
+  cases à cocher + note, « copier ce jour vers... », « dupliquer la semaine », historique des
+  semaines conservé (jamais de suppression), navigation semaine précédente/en cours/suivante
+- Statuts Brouillon / Publié / Archivé : modifier une semaine déjà publiée exige une case de
+  confirmation explicite (protection contre la modification accidentelle) ; une semaine
+  archivée n'est plus modifiable
+- Allergènes et aliments gérés par la garderie (pas de liste figée dans le code), allergies de
+  l'enfant reliées à ces allergènes ; détection automatique des conflits entre le menu
+  réellement applicable à un enfant et ses allergies déclarées, avec vue « Alertes » dédiée
+  (jamais de blocage silencieux : la garderie voit le conflit et l'enfant concerné)
+- Substitutions tracées (aliment remplacé + motif), affichées sous la forme
+  « ~~Poisson~~ → Poulet — Adapté à l'âge (bébés) »
+- Vues Semaine / Par catégorie / Par enfant / Alertes côté direction (lecture + édition) et
+  côté professionnel (lecture seule) ; le badge d'origine (🌐 Général / 🏷️ Catégorie /
+  👶 Individuel) est toujours visible pour ne jamais confondre le menu réel avec le menu de
+  base ; grille transformée en cartes verticales empilées sur mobile
+- Menu du jour resolu affiché directement sur la fiche enfant côté parent
 
 **Notifications** — v1 minimale, en application uniquement (pas de push/email) : une
 notification est créée pour la direction quand un parent déclare une absence, et pour les

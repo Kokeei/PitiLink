@@ -21,6 +21,8 @@ import {
   retirerParent,
   ajouterInfoImportante,
   supprimerInfoImportante,
+  ajouterAllergieEnfant,
+  supprimerAllergieEnfant,
   corrigerAcquisition,
   supprimerAcquisition,
   ajouterPhotoSouvenir,
@@ -43,12 +45,13 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
   const { id } = await params;
   const user = await requireUser(ROLES_DIRECTION);
 
-  const [enfant, groupes] = await Promise.all([
+  const [enfant, groupes, allergenes] = await Promise.all([
     prisma.enfant.findFirst({
       where: { id, garderieId: user.garderieId! },
       include: {
         groupe: true,
         infosImportantes: true,
+        allergies: { include: { allergene: true }, orderBy: { createdAt: "asc" } },
         parents: { include: { user: true } },
         affectations: { include: { professionnel: true } },
         photos: { orderBy: { createdAt: "desc" } },
@@ -56,8 +59,11 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
       },
     }),
     prisma.groupe.findMany({ where: { garderieId: user.garderieId! } }),
+    prisma.allergene.findMany({ where: { garderieId: user.garderieId!, actif: true }, orderBy: { nom: "asc" } }),
   ]);
   if (!enfant) notFound();
+
+  const allergenesDisponibles = allergenes.filter((a) => !enfant.allergies.some((al) => al.allergeneId === a.id));
 
   const [acquisitions, badges, journal] = await Promise.all([
     getAcquisitionsEnfant(id),
@@ -349,6 +355,40 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
                     </label>
                     <button className="btn-secondary col-span-2">Ajouter</button>
                   </form>
+                </div>
+
+                <div className="card space-y-3">
+                  <p className="font-semibold">🍽️ Allergies alimentaires</p>
+                  <p className="text-xs text-stone-400">
+                    Utilisées par le module Menus pour détecter automatiquement les conflits alimentaires.
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    {enfant.allergies.map((a) => (
+                      <li key={a.id} className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2">
+                        <span>
+                          <span className="font-medium">{a.allergene.nom}</span>
+                          {a.note && <span className="text-stone-500"> — {a.note}</span>}
+                        </span>
+                        <form action={supprimerAllergieEnfant.bind(null, id, a.id)}>
+                          <button className="text-xs text-red-600">Supprimer</button>
+                        </form>
+                      </li>
+                    ))}
+                    {enfant.allergies.length === 0 && <p className="text-sm text-stone-400">Aucune allergie déclarée.</p>}
+                  </ul>
+                  {allergenesDisponibles.length > 0 && (
+                    <form action={ajouterAllergieEnfant.bind(null, id)} className="grid grid-cols-2 gap-2">
+                      <select name="allergeneId" className="input-large col-span-2" required>
+                        {allergenesDisponibles.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.nom}
+                          </option>
+                        ))}
+                      </select>
+                      <input name="note" placeholder="Précision (optionnel)" className="input-large col-span-2" />
+                      <button className="btn-secondary col-span-2">Déclarer cette allergie</button>
+                    </form>
+                  )}
                 </div>
 
                 <div className="card space-y-2">
