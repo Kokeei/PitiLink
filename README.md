@@ -40,6 +40,22 @@ npm run dev
 
 Ouvrir [http://localhost:3000](http://localhost:3000).
 
+## Déploiement (Vercel + Neon)
+
+1. **Neon** : créer un projet, copier la chaîne de connexion **pooled** (`...-pooler...neon.tech/...`).
+2. **Vercel** : importer le dépôt GitHub, puis renseigner ces variables d'environnement
+   (Project Settings → Environment Variables) :
+   - `DATABASE_URL` — la chaîne Neon
+   - `AUTH_SECRET` — générer avec `openssl rand -base64 32`
+   - `AUTH_TRUST_HOST` — `true`
+   - `SETUP_TOKEN` — une chaîne aléatoire, sert uniquement à protéger l'étape 4
+3. **Déployer.** La commande `build` (`prisma migrate deploy && next build`) crée
+   automatiquement le schéma sur la base Neon à chaque déploiement.
+4. **Charger les données de démonstration** (une seule fois, sur une base vide) : ouvrir
+   `https://<votre-domaine-vercel>/api/setup?token=<SETUP_TOKEN>` dans le navigateur.
+   L'opération est protégée par le token et sans effet si la base contient déjà des
+   données (peut être rappelée sans risque).
+
 ### Comptes de démonstration
 
 Mot de passe pour tous : `Password123!`

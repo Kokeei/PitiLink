@@ -19,8 +19,11 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p));
   const isApiAuth = nextUrl.pathname.startsWith("/api/auth");
+  // /api/setup gere sa propre protection (SETUP_TOKEN) : provisionnement
+  // initial d'une base vide, avant qu'aucun compte n'existe encore.
+  const isApiSetup = nextUrl.pathname.startsWith("/api/setup");
 
-  if (isApiAuth) return NextResponse.next();
+  if (isApiAuth || isApiSetup) return NextResponse.next();
 
   const user = req.auth?.user;
 
