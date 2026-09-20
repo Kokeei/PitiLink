@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { DeconnexionButton } from "@/components/DeconnexionButton";
 import { Sidebar, NavMobile } from "@/components/Sidebar";
+import { marquerNotificationsLues } from "@/app/actions";
+import { formatDate } from "@/lib/format";
 
 type Item = { href: string; label: string; icone: string };
 
@@ -38,7 +40,10 @@ export async function AppShell({
   rechercheAction?: string;
   children: React.ReactNode;
 }) {
-  const notificationsNonLues = await prisma.notification.count({ where: { userId, lu: false } });
+  const [notificationsNonLues, dernieresNotifications] = await Promise.all([
+    prisma.notification.count({ where: { userId, lu: false } }),
+    prisma.notification.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10 }),
+  ]);
 
   return (
     <div className="flex min-h-screen">
@@ -64,14 +69,44 @@ export async function AppShell({
             <div className="flex-1" />
           )}
 
-          <div className="relative">
-            <span className="text-xl">🔔</span>
-            {notificationsNonLues > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                {notificationsNonLues}
-              </span>
-            )}
-          </div>
+          <details className="relative">
+            <summary className="relative flex cursor-pointer list-none items-center rounded-xl p-1 hover:bg-stone-50">
+              <span className="text-xl">🔔</span>
+              {notificationsNonLues > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {notificationsNonLues}
+                </span>
+              )}
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] rounded-xl border border-stone-200 bg-white shadow-md">
+              <div className="flex items-center justify-between border-b border-stone-100 px-3 py-2">
+                <p className="text-sm font-semibold">Notifications</p>
+                {notificationsNonLues > 0 && (
+                  <form action={marquerNotificationsLues}>
+                    <button className="text-xs text-orange-600">Tout marquer comme lu</button>
+                  </form>
+                )}
+              </div>
+              <ul className="max-h-80 overflow-y-auto">
+                {dernieresNotifications.map((n) => {
+                  const contenu = (
+                    <div className={`px-3 py-2 text-sm ${n.lu ? "text-stone-500" : "font-medium text-stone-800"}`}>
+                      <p>{n.contenu}</p>
+                      <p className="text-xs text-stone-400">{formatDate(n.createdAt)}</p>
+                    </div>
+                  );
+                  return (
+                    <li key={n.id} className="border-b border-stone-50 last:border-0 hover:bg-stone-50">
+                      {n.lien ? <Link href={n.lien}>{contenu}</Link> : contenu}
+                    </li>
+                  );
+                })}
+                {dernieresNotifications.length === 0 && (
+                  <li className="px-3 py-4 text-center text-sm text-stone-400">Aucune notification pour le moment.</li>
+                )}
+              </ul>
+            </div>
+          </details>
 
           <details className="relative">
             <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-2 py-1 hover:bg-stone-50">

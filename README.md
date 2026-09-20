@@ -132,7 +132,9 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 - Menu du jour, petit mot, historique complet
 - Transmission d'informations vers la garderie (« à savoir aujourd'hui »)
 - Croissance (poids/taille/PC + historique), contacts d'urgence, personnes autorisées
-- Déclaration d'absence (maladie/vacances/garde à domicile)
+- Déclaration d'absence (maladie/vacances/garde à domicile), avec certificat médical joint
+  et incidence financière calculée automatiquement selon les règles de la garderie (§ règles
+  de facturation ci-dessous) — pas de validation manuelle nécessaire
 - Progrès de l'enfant : résumé par catégorie + timeline des compétences observées
 
 **Direction** (`/direction`)
@@ -150,6 +152,16 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 - Gestion des menus du jour
 - Gestion du catalogue de compétences (catégories, âges indicatifs, activation) et
   correction/suppression des acquisitions enregistrées
+- Absences : liste consolidée avec incidence financière calculée (décomptée/facturée),
+  règles paramétrables par garderie (préavis minimum, traitement de la maladie avec/sans
+  certificat), annulation d'une absence. Il n'y a pas de « validation » manuelle : la règle
+  s'applique automatiquement, chaque garderie ayant son propre fonctionnement.
+
+**Notifications** — v1 minimale, en application uniquement (pas de push/email) : une
+notification est créée pour la direction quand un parent déclare une absence, et pour les
+parents quand une nouvelle compétence est observée chez leur enfant. La cloche de l'en-tête
+affiche les notifications réelles (non lues en gras) avec lien direct et action « tout
+marquer comme lu ».
 
 **Interface** — sidebar de navigation, recherche d'enfant, badges de notification, fiche
 enfant à onglets avec tuiles colorées (« Aujourd'hui »), photo de profil et galerie de
@@ -171,12 +183,14 @@ souvenirs (upload via Vercel Blob), sur les trois espaces.
 Le schéma de données prévoit déjà `Document`, `Absence`, `Message`/`Conversation`,
 `Evenement` (calendrier) et `Notification`, mais leurs interfaces ne sont pas construites :
 
-- Facturation complète, grille tarifaire, règles d'absence configurables (§42-46)
+- Facturation complète, grille tarifaire détaillée (§42-46) — le calcul de l'incidence
+  décomptée/facturée par absence est fait, pas l'édition de factures
 - Albums organisés automatiquement, tri intelligent des photos, contrôle fin des droits de
   diffusion **par photo** (§35-38) — l'autorisation par enfant est faite, l'upload de base
   (profil, souvenirs, documents) est fait
 - Messagerie parent ↔ garderie (le modèle existe, pas d'UI)
-- Notifications push/email
+- Notifications push/email (l'en-tête a une vraie boîte de notifications en app, sur
+  quelques événements seulement : absence déclarée, compétence observée)
 - Mode hors-connexion avec synchronisation (§59)
 - Statistiques avancées (§61-62), export/transfert de dossier (§65-66)
 - Paiement en ligne, IA de synthèse, tri intelligent des photos (V3, §84)
