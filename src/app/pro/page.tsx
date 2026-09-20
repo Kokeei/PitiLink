@@ -4,9 +4,13 @@ import { getEnfantsPourProfessionnel, getStatutJournalDuJour, getPresenceDuJour 
 import { calculerAge } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT } from "@/lib/journal";
 
-export default async function VueAujourdhuiPage() {
+export default async function VueAujourdhuiPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await requireUser(ROLES_PRO);
-  const enfants = await getEnfantsPourProfessionnel(user.id, user.garderieId!);
+  const { q } = await searchParams;
+  const tousLesEnfants = await getEnfantsPourProfessionnel(user.id, user.garderieId!);
+  const enfants = q
+    ? tousLesEnfants.filter((e) => `${e.prenom} ${e.nom}`.toLowerCase().includes(q.toLowerCase()))
+    : tousLesEnfants;
 
   const enfantsAvecStatut = await Promise.all(
     enfants.map(async (enfant) => ({

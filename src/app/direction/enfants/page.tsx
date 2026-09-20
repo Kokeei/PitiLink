@@ -4,11 +4,16 @@ import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { calculerAge } from "@/lib/format";
 import { creerEnfant } from "./actions";
 
-export default async function EnfantsPage() {
+export default async function EnfantsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await requireUser(ROLES_DIRECTION);
+  const { q } = await searchParams;
+
   const [enfants, groupes] = await Promise.all([
     prisma.enfant.findMany({
-      where: { garderieId: user.garderieId! },
+      where: {
+        garderieId: user.garderieId!,
+        ...(q ? { OR: [{ prenom: { contains: q, mode: "insensitive" } }, { nom: { contains: q, mode: "insensitive" } }] } : {}),
+      },
       include: { groupe: true },
       orderBy: { prenom: "asc" },
     }),
@@ -18,6 +23,11 @@ export default async function EnfantsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Enfants</h1>
+      {q && (
+        <p className="text-sm text-stone-500">
+          Résultats pour « {q} » — <Link href="/direction/enfants" className="text-orange-600">effacer</Link>
+        </p>
+      )}
 
       <div className="card space-y-3">
         <p className="font-semibold">Ajouter un enfant</p>

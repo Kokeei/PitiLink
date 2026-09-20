@@ -38,31 +38,31 @@ export default async function TableauDeBordPage() {
       <h1 className="text-xl font-bold">Tableau de bord</h1>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="card text-center">
-          <p className="text-2xl font-bold">{totalEnfants}</p>
+        <div className="stat-tile bg-sky-50">
+          <p className="text-2xl font-bold text-sky-700">{totalEnfants}</p>
           <p className="text-sm text-stone-500">enfants prévus</p>
         </div>
-        <div className="card text-center">
-          <p className="text-2xl font-bold text-green-600">{presents}</p>
+        <div className="stat-tile bg-emerald-50">
+          <p className="text-2xl font-bold text-emerald-700">{presents}</p>
           <p className="text-sm text-stone-500">présents</p>
         </div>
-        <div className="card text-center">
-          <p className="text-2xl font-bold text-stone-500">{absents}</p>
+        <div className="stat-tile bg-stone-100">
+          <p className="text-2xl font-bold text-stone-600">{absents}</p>
           <p className="text-sm text-stone-500">absents</p>
         </div>
-        <div className="card text-center">
-          <p className="text-2xl font-bold text-orange-600">{Math.max(aConfirmer, 0)}</p>
+        <div className="stat-tile bg-orange-50">
+          <p className="text-2xl font-bold text-orange-700">{Math.max(aConfirmer, 0)}</p>
           <p className="text-sm text-stone-500">à confirmer</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/direction/groupes" className="card text-center">
-          <p className="text-2xl font-bold">{groupes}</p>
+        <Link href="/direction/groupes" className="stat-tile bg-violet-50">
+          <p className="text-2xl font-bold text-violet-700">{groupes}</p>
           <p className="text-sm text-stone-500">groupes</p>
         </Link>
-        <Link href="/direction/professionnels" className="card text-center">
-          <p className="text-2xl font-bold">{professionnels}</p>
+        <Link href="/direction/professionnels" className="stat-tile bg-pink-50">
+          <p className="text-2xl font-bold text-pink-700">{professionnels}</p>
           <p className="text-sm text-stone-500">professionnels</p>
         </Link>
       </div>

@@ -2,9 +2,13 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PARENT } from "@/lib/session";
 import { getJournalDuJour } from "@/lib/data";
-import { calculerAge, formatDate, formatHeure, debutJournee } from "@/lib/format";
+import { formatDate, formatHeure, debutJournee } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, parseJson, resumeEvenement } from "@/lib/journal";
-import { getResumeParCategorie, getAcquisitionsEnfant } from "@/lib/competences";
+import { getBadgesCompetences, getAcquisitionsEnfant } from "@/lib/competences";
+import { EnTeteEnfant } from "@/components/fiche/EnTeteEnfant";
+import { TuilesAujourdhui } from "@/components/fiche/TuilesAujourdhui";
+import { BadgesCompetences } from "@/components/fiche/BadgesCompetences";
+import { GaleriePhotos } from "@/components/fiche/GaleriePhotos";
 import { ajouterMesureCroissance, transmettreInformation, ajouterContactUrgence } from "./actions";
 
 export default async function FicheEnfantParentPage({
@@ -29,6 +33,8 @@ export default async function FicheEnfantParentPage({
       contactsUrgence: { orderBy: { ordrePriorite: "asc" } },
       personnesAutorisees: true,
       mesuresCroissance: { orderBy: { date: "desc" }, take: 10 },
+      photos: { orderBy: { createdAt: "desc" } },
+      affectations: { include: { professionnel: true } },
     },
   });
   if (!enfant) notFound();
@@ -49,19 +55,21 @@ export default async function FicheEnfantParentPage({
     (e) => e.type === "OBSERVATION" && e.commentaire && !e.commentaire.startsWith("[Transmission parent]")
   );
 
-  const [resumeCompetences, acquisitions] = await Promise.all([
-    getResumeParCategorie(id),
+  const referente = enfant.affectations.find((a) => a.referente)?.professionnel;
+  const [badges, acquisitions] = await Promise.all([
+    getBadgesCompetences(id, enfant.garderieId),
     getAcquisitionsEnfant(id),
   ]);
+  const derniereCompetence = acquisitions[0]?.competence;
 
   return (
     <div className="space-y-4">
-      <div className="card">
-        <h1 className="text-xl font-bold">👶 {enfant.prenom} {enfant.nom}</h1>
-        <p className="text-sm text-stone-500">
-          🎂 {formatDate(enfant.dateNaissance)} · {calculerAge(enfant.dateNaissance)} · {enfant.groupe?.nom}
-        </p>
-      </div>
+      <EnTeteEnfant
+        enfant={enfant}
+        referente={referente ? `${referente.prenom} ${referente.nom}` : undefined}
+        petitMot={estAujourdhui ? petitMot?.commentaire : undefined}
+        derniereCompetence={derniereCompetence}
+      />
 
       {enfant.infosImportantes.length > 0 && (
         <div className="card border-2 border-amber-300 bg-amber-50">
@@ -83,13 +91,13 @@ export default async function FicheEnfantParentPage({
           <a href={`?date=${veille.toISOString().slice(0, 10)}`} className="text-sm text-orange-600">
             ← Veille
           </a>
-          <p className="font-semibold">
-            {estAujourdhui ? "Aujourd'hui" : formatDate(dateAffichee)}
-          </p>
+          <p className="font-semibold">{estAujourdhui ? "Aujourd'hui" : formatDate(dateAffichee)}</p>
           <a href={`?date=${lendemain.toISOString().slice(0, 10)}`} className="text-sm text-orange-600">
             Lendemain →
           </a>
         </div>
+
+        {estAujourdhui && <TuilesAujourdhui journal={journal} />}
 
         {menu && (
           <div className="rounded-xl bg-orange-50 p-3 text-sm">
@@ -101,9 +109,7 @@ export default async function FicheEnfantParentPage({
         )}
 
         {petitMot && (
-          <div className="rounded-xl bg-green-50 p-3 text-sm italic text-green-800">
-            💬 « {petitMot.commentaire} »
-          </div>
+          <div className="rounded-xl bg-green-50 p-3 text-sm italic text-green-800">💬 « {petitMot.commentaire} »</div>
         )}
 
         {journal.length === 0 && <p className="text-sm text-stone-500">Aucun événement ce jour-là.</p>}
@@ -182,43 +188,28 @@ export default async function FicheEnfantParentPage({
         )}
       </div>
 
-      {/* Progrès / compétences */}
-      <div className="card space-y-3">
-        <p className="font-semibold">🌱 Les progrès de {enfant.prenom}</p>
-        <p className="text-xs text-stone-400">
-          Outil d&apos;observation et de valorisation : l&apos;absence d&apos;un badge signifie seulement
-          qu&apos;il n&apos;a pas encore été enregistré comme observé.
-        </p>
+      <BadgesCompetences badges={badges} />
 
-        {resumeCompetences.total > 0 ? (
-          <>
-            <p className="text-sm">🏆 {resumeCompetences.total} compétence(s) observée(s)</p>
-            <div className="flex flex-wrap gap-2">
-              {resumeCompetences.parCategorie.map((c) => (
-                <span key={c.nom} className="pill bg-orange-50 text-orange-800">
-                  {c.icone} {c.nom} — {c.total}
-                </span>
-              ))}
-            </div>
+      {acquisitions.length > 0 && (
+        <div className="card space-y-2">
+          <p className="font-semibold">🌱 Historique des progrès</p>
+          <ul className="space-y-3">
+            {acquisitions.map((a) => (
+              <li key={a.id} className="flex gap-3">
+                <span className="text-xl">{a.competence.icone ?? a.competence.categorie.icone}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {a.competence.nom} <span className="font-normal text-stone-400">— {formatDate(a.dateObservation)}</span>
+                  </p>
+                  {a.note && <p className="text-sm text-stone-500">« {a.note} »</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-            <ul className="space-y-3 border-t border-stone-100 pt-3">
-              {acquisitions.map((a) => (
-                <li key={a.id} className="flex gap-3">
-                  <span className="text-xl">{a.competence.icone ?? a.competence.categorie.icone}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {a.competence.nom} <span className="font-normal text-stone-400">— {formatDate(a.dateObservation)}</span>
-                    </p>
-                    {a.note && <p className="text-sm text-stone-500">« {a.note} »</p>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="text-sm text-stone-500">Aucune compétence enregistrée pour le moment.</p>
-        )}
-      </div>
+      <GaleriePhotos photos={enfant.photos} />
 
       {/* Contacts d'urgence */}
       <div className="card space-y-3">
@@ -251,7 +242,8 @@ export default async function FicheEnfantParentPage({
           <ul className="space-y-1 text-sm">
             {enfant.personnesAutorisees.map((p) => (
               <li key={p.id}>
-                {p.prenom} {p.nom} — {p.lien} {p.ponctuelle && <span className="pill bg-orange-100 text-orange-700 ml-1">Ponctuelle</span>}
+                {p.prenom} {p.nom} — {p.lien}{" "}
+                {p.ponctuelle && <span className="pill bg-orange-100 text-orange-700 ml-1">Ponctuelle</span>}
               </li>
             ))}
           </ul>

@@ -12,7 +12,9 @@ modèle **prévu → réel**.
 - **Next.js 16** (App Router, React 19, TypeScript, Turbopack)
 - **PostgreSQL** + **Prisma ORM 7** (driver adapter `@prisma/adapter-pg`)
 - **NextAuth v5** (Credentials, sessions JWT, multi-tenant par garderie, rôles)
-- **TailwindCSS v4** — design mobile-first (gros boutons, pictogrammes, faible densité)
+- **TailwindCSS v4** — sidebar + onglets + tuiles colorées, mobile-first (gros boutons,
+  pictogrammes)
+- **Vercel Blob** (`@vercel/blob`) — upload des photos (profil enfant, souvenirs, documents)
 - Server Actions (Next.js) pour toutes les mutations — pas d'API REST séparée
 
 ## Démarrage local
@@ -49,9 +51,13 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
    - `AUTH_SECRET` — générer avec `openssl rand -base64 32`
    - `AUTH_TRUST_HOST` — `true`
    - `SETUP_TOKEN` — une chaîne aléatoire, sert uniquement à protéger l'étape 4
-3. **Déployer.** La commande `build` (`prisma migrate deploy && next build`) crée
+3. **Vercel Blob** (upload de photos) : Storage → Create Database → Blob, puis connecter
+   au projet. Vercel ajoute automatiquement `BLOB_READ_WRITE_TOKEN`. Sans cette étape,
+   les formulaires de photo échouent silencieusement (aucune erreur visible, la photo
+   n'est simplement pas enregistrée).
+4. **Déployer.** La commande `build` (`prisma migrate deploy && next build`) crée
    automatiquement le schéma sur la base Neon à chaque déploiement.
-4. **Charger les données de démonstration** (une seule fois, sur une base vide) : ouvrir
+5. **Charger les données de démonstration** (une seule fois, sur une base vide) : ouvrir
    `https://<votre-domaine-vercel>/api/setup?token=<SETUP_TOKEN>` dans le navigateur.
    L'opération est protégée par le token et sans effet si la base contient déjà des
    données (peut être rappelée sans risque).
@@ -127,12 +133,19 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 
 **Direction** (`/direction`)
 - Tableau de bord (présences du jour, alertes « à traiter »)
-- Gestion des enfants (création, statut, groupe, informations importantes)
+- Fiche enfant à onglets (Vue d'ensemble, Informations, Compétences, Documents, Historique) :
+  gestion de deux parents maximum (rôle libre papa/maman/tuteur, indépendant l'un de l'autre —
+  couvre les familles homoparentales), contact d'urgence principal, adresse, photo de profil,
+  galerie de souvenirs, documents (upload)
 - Gestion des groupes, des professionnels (création de compte), des affectations
   (y compris réaffectation en cas d'absence d'une tatie)
 - Gestion des menus du jour
 - Gestion du catalogue de compétences (catégories, âges indicatifs, activation) et
   correction/suppression des acquisitions enregistrées
+
+**Interface** — sidebar de navigation, recherche d'enfant, badges de notification, fiche
+enfant à onglets avec tuiles colorées (« Aujourd'hui »), photo de profil et galerie de
+souvenirs (upload via Vercel Blob), sur les trois espaces.
 
 **Suivi du développement / compétences** (cahier des charges §90)
 - Catalogue de compétences par catégorie (motricité, langage, socialisation, autonomie,
@@ -151,7 +164,8 @@ Le schéma de données prévoit déjà `Document`, `Absence`, `Message`/`Convers
 `Evenement` (calendrier) et `Notification`, mais leurs interfaces ne sont pas construites :
 
 - Facturation complète, grille tarifaire, règles d'absence configurables (§42-46)
-- Upload de documents/ordonnances, albums photo, tri intelligent des photos (§28, 35-38)
+- Albums organisés automatiquement, tri intelligent des photos, contrôle fin des droits de
+  diffusion par photo (§35-38) — l'upload de base (profil, souvenirs, documents) est fait
 - Messagerie parent ↔ garderie (le modèle existe, pas d'UI)
 - Notifications push/email
 - Mode hors-connexion avec synchronisation (§59)
