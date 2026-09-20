@@ -74,15 +74,19 @@ export default async function TableauDeBordPage() {
         )}
         <ul className="space-y-2 text-sm">
           {absencesEnAttente.map((a) => (
-            <li key={a.id} className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2">
-              <span>
-                🏖️ Absence {a.enfant.prenom} à confirmer ({formatDate(a.dateDebut)} → {formatDate(a.dateFin)})
-              </span>
+            <li key={a.id}>
+              <Link href="/direction/absences" className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 hover:bg-amber-100">
+                <span>
+                  🏖️ Absence {a.enfant.prenom} ({formatDate(a.dateDebut)} → {formatDate(a.dateFin)})
+                </span>
+              </Link>
             </li>
           ))}
           {incidentsDuJour.map((i) => (
-            <li key={i.id} className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2">
-              <span>⚠️ Incident signalé — {i.enfant.prenom}</span>
+            <li key={i.id}>
+              <Link href={`/direction/enfants/${i.enfant.id}`} className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 hover:bg-red-100">
+                <span>⚠️ Incident signalé — {i.enfant.prenom}</span>
+              </Link>
             </li>
           ))}
         </ul>

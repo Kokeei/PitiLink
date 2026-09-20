@@ -31,6 +31,13 @@ model Garderie {
   telephone String?
   email     String?
   horaires  String? // texte libre pour le MVP ("07h30 - 18h30")
+
+  // Règles de facturation des absences (paramétrables : chaque garderie a
+  // son propre fonctionnement). Voir lib/absences.ts pour le calcul.
+  absenceDelaiPreavisJours              Int     @default(2)
+  absenceMaladieCertificatDecompte      Boolean @default(true)
+  absenceMaladieSansCertificatDecompte  Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -402,8 +409,7 @@ enum TypeAbsence {
 
 enum StatutAbsence {
   DECLAREE
-  CONFIRMEE
-  REFUSEE
+  ANNULEE
 }
 
 model Absence {
@@ -550,6 +556,7 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
   contenu   String
+  lien      String?
   lu        Boolean  @default(false)
   createdAt DateTime @default(now())
 

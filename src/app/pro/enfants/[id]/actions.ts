@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PRO } from "@/lib/session";
 import { uploaderFichier } from "@/lib/blob";
+import { creerNotificationsParents } from "@/lib/notifications";
 
 async function contexte(enfantId: string) {
   const user = await requireUser(ROLES_PRO);
@@ -232,6 +233,12 @@ export async function enregistrerAcquisition(enfantId: string, formData: FormDat
     },
   });
 
+  await creerNotificationsParents(enfantId, {
+    type: "COMPETENCE_OBSERVEE",
+    contenu: `Nouvelle compétence observée pour ${enfant.prenom} : ${competence.nom}`,
+    lien: `/parent/enfants/${enfantId}`,
+  });
+
   revalidatePath(`/pro/enfants/${enfantId}`);
   revalidatePath(`/parent/enfants/${enfantId}`);
   revalidatePath(`/direction/enfants/${enfantId}`);
@@ -246,8 +253,9 @@ export async function enregistrerAcquisitions(enfantId: string, formData: FormDa
 
   const competences = await prisma.competence.findMany({
     where: { id: { in: competenceIds }, garderieId: enfant.garderieId },
-    select: { id: true },
+    select: { id: true, nom: true },
   });
+  if (competences.length === 0) return;
 
   await prisma.acquisitionCompetence.createMany({
     data: competences.map((c) => ({
@@ -259,6 +267,15 @@ export async function enregistrerAcquisitions(enfantId: string, formData: FormDa
       note,
       photoUrl,
     })),
+  });
+
+  await creerNotificationsParents(enfantId, {
+    type: "COMPETENCE_OBSERVEE",
+    contenu:
+      competences.length === 1
+        ? `Nouvelle compétence observée pour ${enfant.prenom} : ${competences[0].nom}`
+        : `${competences.length} nouvelles compétences observées pour ${enfant.prenom}`,
+    lien: `/parent/enfants/${enfantId}`,
   });
 
   revalidatePath(`/pro/enfants/${enfantId}`);

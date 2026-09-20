@@ -2,30 +2,39 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PARENT } from "@/lib/session";
 import { getEnfantsDuParent } from "@/lib/data";
 import { formatDate } from "@/lib/format";
+import { calculerImpactFacturation, LIBELLES_TYPE_ABSENCE } from "@/lib/absences";
 import { declarerAbsence } from "./actions";
 
-const TYPES_ABSENCE = [
-  { valeur: "MALADIE", libelle: "🤒 Maladie", note: "Un certificat médical peut éviter la facturation selon les règles de la garderie." },
-  { valeur: "VACANCES", libelle: "🏖️ Vacances", note: "Une déclaration dans les délais peut donner lieu à une déduction." },
-  { valeur: "GARDE_DOMICILE", libelle: "🏠 Garde à domicile", note: "Selon les règles de la garderie, une facturation peut s'appliquer." },
-  { valeur: "AUTRE", libelle: "Autre", note: "" },
-];
-
-const STATUTS: Record<string, string> = {
-  DECLAREE: "🟠 Déclarée",
-  CONFIRMEE: "🟢 Confirmée",
-  REFUSEE: "🔴 Refusée",
+const IMPACT_PILL: Record<string, string> = {
+  DECOMPTEE: "bg-emerald-100 text-emerald-700",
+  FACTUREE: "bg-red-100 text-red-700",
+};
+const IMPACT_LABEL: Record<string, string> = {
+  DECOMPTEE: "🟢 Décomptée",
+  FACTUREE: "🔴 Facturée",
 };
 
 export default async function AbsencesPage() {
   const user = await requireUser(ROLES_PARENT);
   const enfants = await getEnfantsDuParent(user.id);
 
-  const absences = await prisma.absence.findMany({
-    where: { enfantId: { in: enfants.map((e) => e.id) } },
-    include: { enfant: true },
-    orderBy: { dateDebut: "desc" },
-  });
+  if (enfants.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold">Absences</h1>
+        <p className="card text-sm text-stone-500">Aucun enfant n&apos;est encore rattaché à votre compte.</p>
+      </div>
+    );
+  }
+
+  const [absences, garderie] = await Promise.all([
+    prisma.absence.findMany({
+      where: { enfantId: { in: enfants.map((e) => e.id) } },
+      include: { enfant: true },
+      orderBy: { dateDebut: "desc" },
+    }),
+    prisma.garderie.findUniqueOrThrow({ where: { id: enfants[0].garderieId } }),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -42,9 +51,9 @@ export default async function AbsencesPage() {
             ))}
           </select>
           <select name="type" className="input-large" required>
-            {TYPES_ABSENCE.map((t) => (
-              <option key={t.valeur} value={t.valeur}>
-                {t.libelle}
+            {Object.entries(LIBELLES_TYPE_ABSENCE).map(([valeur, libelle]) => (
+              <option key={valeur} value={valeur}>
+                {libelle}
               </option>
             ))}
           </select>
@@ -53,28 +62,44 @@ export default async function AbsencesPage() {
             <input name="dateFin" type="date" className="input-large" required />
           </div>
           <textarea name="commentaire" placeholder="Précision (optionnel)" className="input-large" rows={2} />
+          <div>
+            <label className="mb-1 block text-sm text-stone-600">
+              Certificat médical (si maladie — évite la facturation du/des jour(s) concerné(s))
+            </label>
+            <input type="file" name="justificatif" accept="image/*,.pdf" className="text-sm" />
+          </div>
           <p className="rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-500">
-            ℹ️ L&apos;incidence financière dépend des règles définies par votre garderie et vous sera
-            communiquée après validation par la direction.
+            ℹ️ L&apos;incidence financière (jour décompté ou facturé) dépend des règles définies par votre
+            garderie — préavis minimum de {garderie.absenceDelaiPreavisJours} jour
+            {garderie.absenceDelaiPreavisJours > 1 ? "s" : ""}, sauf maladie avec certificat.
           </p>
           <button className="btn-primary w-full">Déclarer l&apos;absence</button>
         </form>
       </div>
 
       <div className="space-y-2">
-        {absences.map((a) => (
-          <div key={a.id} className="card flex items-center justify-between">
-            <div>
-              <p className="font-medium">
-                {a.enfant.prenom} — {TYPES_ABSENCE.find((t) => t.valeur === a.type)?.libelle}
-              </p>
-              <p className="text-sm text-stone-500">
-                {formatDate(a.dateDebut)} → {formatDate(a.dateFin)}
-              </p>
+        {absences.map((a) => {
+          const annulee = a.statut === "ANNULEE";
+          const { impact, motif } = calculerImpactFacturation(a, garderie);
+          return (
+            <div key={a.id} className={`card flex items-center justify-between ${annulee ? "opacity-60" : ""}`}>
+              <div>
+                <p className="font-medium">
+                  {a.enfant.prenom} — {LIBELLES_TYPE_ABSENCE[a.type]}
+                </p>
+                <p className="text-sm text-stone-500">
+                  {formatDate(a.dateDebut)} → {formatDate(a.dateFin)}
+                </p>
+                <p className="text-xs text-stone-400">{annulee ? "Annulée par la garderie" : motif}</p>
+              </div>
+              {annulee ? (
+                <span className="pill bg-stone-100 text-stone-500">Annulée</span>
+              ) : (
+                <span className={`pill ${IMPACT_PILL[impact]}`}>{IMPACT_LABEL[impact]}</span>
+              )}
             </div>
-            <span className="pill bg-stone-100">{STATUTS[a.statut]}</span>
-          </div>
-        ))}
+          );
+        })}
         {absences.length === 0 && <p className="text-sm text-stone-500">Aucune absence déclarée.</p>}
       </div>
     </div>
