@@ -10,6 +10,12 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Les migrations ont besoin d'une connexion directe (non-pooler) pour
+    // pouvoir poser leur verrou consultatif Postgres : avec une URL passant
+    // par PgBouncer/pooler (utilisée par l'app en production via DATABASE_URL),
+    // `prisma migrate deploy` échoue avec "Timed out trying to acquire a
+    // postgres advisory lock". DIRECT_URL est optionnelle : en local, on
+    // retombe sur DATABASE_URL qui pointe déjà en direct sur Postgres.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
