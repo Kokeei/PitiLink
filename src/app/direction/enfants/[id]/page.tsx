@@ -80,10 +80,14 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
         petitMot={petitMot?.commentaire}
         derniereCompetence={derniereCompetence}
         actions={
-          <form action={modifierPhotoEnfant.bind(null, id)} className="flex items-center gap-2">
-            <input type="file" name="photo" accept="image/*" className="text-xs" />
-            <button className="btn-secondary text-xs">Changer la photo</button>
-          </form>
+          enfant.autorisationPhotos === "AUTORISEE" ? (
+            <form action={modifierPhotoEnfant.bind(null, id)} className="flex items-center gap-2">
+              <input type="file" name="photo" accept="image/*" className="text-xs" />
+              <button className="btn-secondary text-xs">Changer la photo</button>
+            </form>
+          ) : (
+            <p className="text-xs text-amber-700">⚠️ Diffusion photo non autorisée</p>
+          )
         }
       />
 
@@ -144,6 +148,7 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
                     photos={enfant.photos}
                     ajouterAction={ajouterPhotoSouvenir.bind(null, id)}
                     supprimerAction={supprimerPhotoSouvenir.bind(null, id)}
+                    autorisation={enfant.autorisationPhotos}
                   />
                 </div>
               </div>
@@ -180,6 +185,19 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
                       placeholder="📍 Adresse de la famille"
                       className="input-large w-full"
                     />
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-stone-600">
+                        📷 Autorisation de diffusion des photos (droit à l&apos;image)
+                      </label>
+                      <select name="autorisationPhotos" defaultValue={enfant.autorisationPhotos} className="input-large w-full">
+                        <option value="NON_RENSEIGNEE">Non renseignée</option>
+                        <option value="AUTORISEE">Autorisée par la famille</option>
+                        <option value="REFUSEE">Refusée par la famille</option>
+                      </select>
+                      <p className="mt-1 text-xs text-stone-400">
+                        Sans autorisation explicite, aucune photo ne peut être ajoutée à la fiche.
+                      </p>
+                    </div>
                   </div>
 
                   {enfant.parents.length > 0 && (

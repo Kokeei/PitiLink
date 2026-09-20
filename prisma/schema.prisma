@@ -111,6 +111,12 @@ enum StatutEnfant {
   ARCHIVE
 }
 
+enum AutorisationDiffusion {
+  NON_RENSEIGNEE
+  AUTORISEE
+  REFUSEE
+}
+
 model Enfant {
   id         String   @id @default(cuid())
   garderieId String
@@ -127,6 +133,10 @@ model Enfant {
   dateDebutAccueil DateTime?
   statut           StatutEnfant @default(ACTIF)
   adresse          String?
+
+  // Droit à l'image (RGPD / mineurs) : tant que le statut n'est pas
+  // explicitement AUTORISEE, aucune photo ne peut être ajoutée à la fiche.
+  autorisationPhotos AutorisationDiffusion @default(NON_RENSEIGNEE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

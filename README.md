@@ -141,6 +141,10 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
   gestion de deux parents maximum (rôle libre papa/maman/tuteur, indépendant l'un de l'autre —
   couvre les familles homoparentales), contact d'urgence principal, adresse, photo de profil,
   galerie de souvenirs, documents (upload)
+- Droit à l'image : autorisation de diffusion des photos par enfant (non renseignée / autorisée /
+  refusée par la famille), gérée par la direction. Tant qu'elle n'est pas explicitement
+  « autorisée », l'ajout de photo (profil ou souvenir) est bloqué côté serveur pour tous les
+  rôles (direction et professionnels), pas seulement masqué côté interface.
 - Gestion des groupes, des professionnels (création de compte), des affectations
   (y compris réaffectation en cas d'absence d'une tatie)
 - Gestion des menus du jour
@@ -169,7 +173,8 @@ Le schéma de données prévoit déjà `Document`, `Absence`, `Message`/`Convers
 
 - Facturation complète, grille tarifaire, règles d'absence configurables (§42-46)
 - Albums organisés automatiquement, tri intelligent des photos, contrôle fin des droits de
-  diffusion par photo (§35-38) — l'upload de base (profil, souvenirs, documents) est fait
+  diffusion **par photo** (§35-38) — l'autorisation par enfant est faite, l'upload de base
+  (profil, souvenirs, documents) est fait
 - Messagerie parent ↔ garderie (le modèle existe, pas d'UI)
 - Notifications push/email
 - Mode hors-connexion avec synchronisation (§59)

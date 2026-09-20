@@ -268,6 +268,7 @@ export async function enregistrerAcquisitions(enfantId: string, formData: FormDa
 
 export async function modifierPhotoEnfant(enfantId: string, formData: FormData) {
   const { enfant } = await contexte(enfantId);
+  if (enfant.autorisationPhotos !== "AUTORISEE") return;
   const fichier = formData.get("photo") as File | null;
 
   const url = await uploaderFichier(fichier, `enfants/${enfantId}/profil`);
@@ -281,6 +282,7 @@ export async function modifierPhotoEnfant(enfantId: string, formData: FormData) 
 
 export async function ajouterPhotoSouvenir(enfantId: string, formData: FormData) {
   const { user, enfant } = await contexte(enfantId);
+  if (enfant.autorisationPhotos !== "AUTORISEE") return;
   const fichier = formData.get("photo") as File | null;
   const legende = (formData.get("legende") as string) || undefined;
 
