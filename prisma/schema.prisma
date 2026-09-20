@@ -1,0 +1,606 @@
+// Schema Prisma - PitiLink
+// Modele de donnees oriente autour de l'entite Enfant et d'un systeme d'evenements (journal),
+// avec isolation stricte des donnees par garderie (multi-tenant).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Utilisateurs & garderies
+// ---------------------------------------------------------------------------
+
+enum Role {
+  PARENT
+  PROFESSIONNEL
+  RESPONSABLE
+  DIRECTION
+  ADMIN_PLATEFORME
+}
+
+model Garderie {
+  id        String   @id @default(cuid())
+  nom       String
+  logoUrl   String?
+  adresse   String?
+  telephone String?
+  email     String?
+  horaires  String? // texte libre pour le MVP ("07h30 - 18h30")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                  User[]
+  groupes                Groupe[]
+  enfants                Enfant[]
+  activites              Activite[]
+  menusJour              MenuJour[]
+  evenements             Evenement[]
+  journalEvenements      JournalEvenement[]
+  documents              Document[]
+  categoriesCompetences  CategorieCompetence[]
+  competences            Competence[]
+  acquisitionsCompetence AcquisitionCompetence[]
+
+  @@map("garderies")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nom          String
+  prenom       String
+  telephone    String?
+  role         Role
+  photoUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  garderieId String?
+  garderie   Garderie? @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+
+  enfants               ParentEnfant[]
+  affectations          Affectation[]
+  journalEntries        JournalEvenement[]        @relation("AuteurJournal")
+  messagesEnvoyes       Message[]
+  conversations         ConversationParticipant[]
+  mesuresSaisies        Croissance[]
+  absencesCreees        Absence[]
+  notifications         Notification[]
+  acquisitionsObservees AcquisitionCompetence[]   @relation("AuteurAcquisition")
+  acquisitionsModifiees AcquisitionCompetence[]   @relation("ModificateurAcquisition")
+
+  @@index([garderieId])
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Structure de la garderie
+// ---------------------------------------------------------------------------
+
+model Groupe {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+
+  nom        String
+  ageMinMois Int?
+  ageMaxMois Int?
+  capacite   Int?
+  couleur    String?
+
+  enfants                Enfant[]
+  affectations           Affectation[]
+  acquisitionsCompetence AcquisitionCompetence[]
+
+  @@index([garderieId])
+  @@map("groupes")
+}
+
+enum StatutEnfant {
+  ACTIF
+  SUSPENDU
+  SORTI
+  ARCHIVE
+}
+
+model Enfant {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+
+  groupeId String?
+  groupe   Groupe? @relation(fields: [groupeId], references: [id], onDelete: SetNull)
+
+  prenom           String
+  nom              String
+  photoUrl         String?
+  dateNaissance    DateTime
+  dateInscription  DateTime?
+  dateDebutAccueil DateTime?
+  statut           StatutEnfant @default(ACTIF)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parents                ParentEnfant[]
+  contactsUrgence        ContactUrgence[]
+  personnesAutorisees    PersonneAutorisee[]
+  infosImportantes       InfoImportante[]
+  affectations           Affectation[]
+  presences              Presence[]
+  journalEvenements      JournalEvenement[]
+  mesuresCroissance      Croissance[]
+  absences               Absence[]
+  documents              Document[]
+  acquisitionsCompetence AcquisitionCompetence[]
+
+  @@index([garderieId])
+  @@index([groupeId])
+  @@map("enfants")
+}
+
+enum LienFamilial {
+  MERE
+  PERE
+  TUTEUR
+  AUTRE
+}
+
+model ParentEnfant {
+  id       String       @id @default(cuid())
+  enfantId String
+  enfant   Enfant       @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lien     LienFamilial @default(AUTRE)
+
+  @@unique([enfantId, userId])
+  @@map("parents_enfants")
+}
+
+model ContactUrgence {
+  id                  String  @id @default(cuid())
+  enfantId            String
+  enfant              Enfant  @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  nom                 String
+  prenom              String
+  lien                String
+  telephone           String
+  telephoneSecondaire String?
+  ordrePriorite       Int     @default(1)
+
+  @@index([enfantId])
+  @@map("contacts_urgence")
+}
+
+model PersonneAutorisee {
+  id         String    @id @default(cuid())
+  enfantId   String
+  enfant     Enfant    @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  nom        String
+  prenom     String
+  lien       String
+  telephone  String?
+  photoUrl   String?
+  ponctuelle Boolean   @default(false)
+  dateDebut  DateTime?
+  dateFin    DateTime?
+
+  @@index([enfantId])
+  @@map("personnes_autorisees")
+}
+
+enum TypeInfoImportante {
+  ALLERGIE
+  REGIME_ALIMENTAIRE
+  PROTOCOLE
+  OBJET_TRANSITIONNEL
+  AUTRE
+}
+
+model InfoImportante {
+  id          String             @id @default(cuid())
+  enfantId    String
+  enfant      Enfant             @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  type        TypeInfoImportante
+  titre       String
+  description String?
+  critique    Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+
+  @@index([enfantId])
+  @@map("infos_importantes")
+}
+
+// ---------------------------------------------------------------------------
+// Affectations & presences
+// ---------------------------------------------------------------------------
+
+model Affectation {
+  id              String  @id @default(cuid())
+  enfantId        String
+  enfant          Enfant  @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  professionnelId String
+  professionnel   User    @relation(fields: [professionnelId], references: [id], onDelete: Cascade)
+  groupeId        String?
+  groupe          Groupe? @relation(fields: [groupeId], references: [id], onDelete: SetNull)
+
+  joursSemaine Int[] // 0 = dimanche ... 6 = samedi ; vide = tous les jours
+  heureDebut   String?
+  heureFin     String?
+  referente    Boolean  @default(false)
+  actif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([enfantId])
+  @@index([professionnelId])
+  @@map("affectations")
+}
+
+enum StatutPresence {
+  PREVU
+  PRESENT
+  ABSENT
+  A_CONFIRMER
+}
+
+model Presence {
+  id       String         @id @default(cuid())
+  enfantId String
+  enfant   Enfant         @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  date     DateTime // jour (sans heure)
+  statut   StatutPresence @default(PREVU)
+
+  heureArrivee DateTime?
+  heureDepart  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([enfantId, date])
+  @@index([date])
+  @@map("presences")
+}
+
+// ---------------------------------------------------------------------------
+// Journal quotidien (coeur de l'application)
+// ---------------------------------------------------------------------------
+
+enum TypeJournalEvenement {
+  ARRIVEE
+  DEPART
+  BIBERON
+  REPAS
+  CHANGE
+  SIESTE
+  ACTIVITE
+  HUMEUR
+  BAIN
+  MEDICAMENT
+  INTERACTION
+  INCIDENT
+  OBSERVATION
+  SORTIE
+  AUTRE
+}
+
+enum StatutJournalEvenement {
+  PREVU // prerempli, pas encore valide
+  REALISE // valide par la professionnelle (avec eventuel ecart au prevu)
+  ANNULE
+}
+
+model JournalEvenement {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  enfantId   String
+  enfant     Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+
+  type      TypeJournalEvenement
+  statut    StatutJournalEvenement @default(REALISE)
+  timestamp DateTime               @default(now())
+
+  auteurId String?
+  auteur   User?   @relation("AuteurJournal", fields: [auteurId], references: [id], onDelete: SetNull)
+
+  // Donnees specifiques a chaque type d'evenement (quantite, type de couche, duree, humeur, etc.)
+  donneesPrevues String? // JSON stringifie : ce qui avait ete anticipe
+  donneesReelles String? // JSON stringifie : ce qui a ete reellement constate
+  commentaire    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([garderieId])
+  @@index([enfantId, timestamp])
+  @@map("journal_evenements")
+}
+
+// ---------------------------------------------------------------------------
+// Croissance
+// ---------------------------------------------------------------------------
+
+model Croissance {
+  id                 String   @id @default(cuid())
+  enfantId           String
+  enfant             Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  date               DateTime
+  poidsKg            Float?
+  tailleCm           Float?
+  perimetreCranienCm Float?
+  auteurId           String?
+  auteur             User?    @relation(fields: [auteurId], references: [id], onDelete: SetNull)
+  createdAt          DateTime @default(now())
+
+  @@index([enfantId, date])
+  @@map("croissance")
+}
+
+// ---------------------------------------------------------------------------
+// Activites & menus
+// ---------------------------------------------------------------------------
+
+model Activite {
+  id          String   @id @default(cuid())
+  garderieId  String
+  garderie    Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  nom         String
+  categorie   String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([garderieId])
+  @@map("activites")
+}
+
+model MenuJour {
+  id            String   @id @default(cuid())
+  garderieId    String
+  garderie      Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  date          DateTime
+  petitDejeuner String?
+  dejeuner      String?
+  gouter        String?
+  autre         String?
+  createdAt     DateTime @default(now())
+
+  @@unique([garderieId, date])
+  @@map("menus_jour")
+}
+
+// ---------------------------------------------------------------------------
+// Absences
+// ---------------------------------------------------------------------------
+
+enum TypeAbsence {
+  MALADIE
+  VACANCES
+  GARDE_DOMICILE
+  AUTRE
+}
+
+enum StatutAbsence {
+  DECLAREE
+  CONFIRMEE
+  REFUSEE
+}
+
+model Absence {
+  id              String        @id @default(cuid())
+  enfantId        String
+  enfant          Enfant        @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  type            TypeAbsence
+  dateDebut       DateTime
+  dateFin         DateTime
+  justificatifUrl String?
+  commentaire     String?
+  statut          StatutAbsence @default(DECLAREE)
+  declareParId    String?
+  declarePar      User?         @relation(fields: [declareParId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+
+  @@index([enfantId])
+  @@map("absences")
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+enum TypeDocument {
+  CONTRAT
+  AUTORISATION
+  ORDONNANCE
+  JUSTIFICATIF
+  AUTRE
+}
+
+model Document {
+  id             String       @id @default(cuid())
+  garderieId     String
+  garderie       Garderie     @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  enfantId       String?
+  enfant         Enfant?      @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  type           TypeDocument
+  nom            String
+  url            String
+  dateExpiration DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([garderieId])
+  @@index([enfantId])
+  @@map("documents")
+}
+
+// ---------------------------------------------------------------------------
+// Evenements de garderie (calendrier : fetes, sorties, reunions...)
+// ---------------------------------------------------------------------------
+
+enum TypeEvenementCalendrier {
+  FETE
+  SORTIE
+  SPECTACLE
+  REUNION
+  FERMETURE
+  ACTIVITE_SPECIALE
+  ANNIVERSAIRE
+  AUTRE
+}
+
+model Evenement {
+  id                  String                  @id @default(cuid())
+  garderieId          String
+  garderie            Garderie                @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  type                TypeEvenementCalendrier
+  titre               String
+  description         String?
+  dateDebut           DateTime
+  dateFin             DateTime?
+  confirmationRequise Boolean                 @default(false)
+  createdAt           DateTime                @default(now())
+
+  @@index([garderieId])
+  @@map("evenements")
+}
+
+// ---------------------------------------------------------------------------
+// Messagerie
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id           String                    @id @default(cuid())
+  titre        String?
+  createdAt    DateTime                  @default(now())
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  auteurId       String
+  auteur         User         @relation(fields: [auteurId], references: [id], onDelete: Cascade)
+  contenu        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  contenu   String
+  lu        Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, lu])
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// Suivi du developpement et acquisition de competences (badges de progres)
+//
+// Outil d'observation et de valorisation uniquement : aucune donnee ici ne
+// doit permettre de calculer un retard, un classement ou un diagnostic.
+// L'absence d'une acquisition signifie seulement qu'elle n'a pas encore ete
+// enregistree comme observee.
+// ---------------------------------------------------------------------------
+
+model CategorieCompetence {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+
+  nom   String
+  icone String?
+  ordre Int     @default(0)
+  actif Boolean @default(true)
+
+  competences Competence[]
+
+  @@index([garderieId])
+  @@map("categories_competences")
+}
+
+model Competence {
+  id          String              @id @default(cuid())
+  garderieId  String
+  garderie    Garderie            @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  categorieId String
+  categorie   CategorieCompetence @relation(fields: [categorieId], references: [id], onDelete: Cascade)
+
+  nom                 String
+  icone               String?
+  description         String?
+  ordreAffichage      Int      @default(0)
+  ageIndicatifMoisMin Int?
+  ageIndicatifMoisMax Int?
+  actif               Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  acquisitions AcquisitionCompetence[]
+
+  @@index([garderieId])
+  @@index([categorieId])
+  @@map("competences")
+}
+
+model AcquisitionCompetence {
+  id           String     @id @default(cuid())
+  garderieId   String
+  garderie     Garderie   @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  enfantId     String
+  enfant       Enfant     @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+  competenceId String
+  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  groupeId     String?
+  groupe       Groupe?    @relation(fields: [groupeId], references: [id], onDelete: SetNull)
+
+  dateObservation DateTime @default(now())
+  note            String?
+  photoUrl        String?
+
+  auteurId String
+  auteur   User   @relation("AuteurAcquisition", fields: [auteurId], references: [id], onDelete: Cascade)
+
+  // Tracabilite des corrections (§90.11) : on conserve la note d'origine et
+  // qui/quand a corrige, sans supprimer l'observation initiale.
+  noteOriginale String?
+  modifieParId  String?
+  modifiePar    User?     @relation("ModificateurAcquisition", fields: [modifieParId], references: [id], onDelete: SetNull)
+  modifieLe     DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([garderieId])
+  @@index([enfantId, dateObservation])
+  @@index([competenceId])
+  @@map("acquisitions_competences")
+}
