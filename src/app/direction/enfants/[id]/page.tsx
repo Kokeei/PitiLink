@@ -2,7 +2,14 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { calculerAge, formatDate } from "@/lib/format";
-import { modifierStatutEnfant, ajouterInfoImportante, supprimerInfoImportante } from "../actions";
+import { getAcquisitionsEnfant } from "@/lib/competences";
+import {
+  modifierStatutEnfant,
+  ajouterInfoImportante,
+  supprimerInfoImportante,
+  corrigerAcquisition,
+  supprimerAcquisition,
+} from "../actions";
 
 export default async function FicheEnfantDirectionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +28,8 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
     prisma.groupe.findMany({ where: { garderieId: user.garderieId! } }),
   ]);
   if (!enfant) notFound();
+
+  const acquisitions = await getAcquisitionsEnfant(id);
 
   return (
     <div className="space-y-4">
@@ -106,6 +115,39 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
           </label>
           <button className="btn-secondary col-span-2">Ajouter</button>
         </form>
+      </div>
+
+      <div className="card space-y-3">
+        <p className="font-semibold">🌱 Compétences observées</p>
+        {acquisitions.length === 0 && <p className="text-sm text-stone-500">Aucune compétence enregistrée.</p>}
+        <ul className="space-y-3">
+          {acquisitions.map((a) => (
+            <li key={a.id} className="rounded-lg bg-stone-50 p-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">
+                    {a.competence.icone ?? a.competence.categorie.icone} {a.competence.nom}{" "}
+                    <span className="font-normal text-stone-400">— {formatDate(a.dateObservation)}</span>
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    observé par {a.auteur.prenom} {a.auteur.nom}
+                    {a.modifiePar && ` · corrigé par ${a.modifiePar.prenom} le ${formatDate(a.modifieLe!)}`}
+                  </p>
+                  {a.noteOriginale && (
+                    <p className="text-xs text-stone-400 italic">note d&apos;origine : « {a.noteOriginale} »</p>
+                  )}
+                </div>
+                <form action={supprimerAcquisition.bind(null, id, a.id)}>
+                  <button className="text-xs text-red-600">Supprimer</button>
+                </form>
+              </div>
+              <form action={corrigerAcquisition.bind(null, id, a.id)} className="mt-2 flex gap-2">
+                <input name="note" defaultValue={a.note ?? ""} placeholder="Note" className="input-large flex-1 text-sm" />
+                <button className="btn-secondary text-sm">Corriger</button>
+              </form>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

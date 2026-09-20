@@ -107,6 +107,7 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 - Transmission d'informations vers la garderie (« à savoir aujourd'hui »)
 - Croissance (poids/taille/PC + historique), contacts d'urgence, personnes autorisées
 - Déclaration d'absence (maladie/vacances/garde à domicile)
+- Progrès de l'enfant : résumé par catégorie + timeline des compétences observées
 
 **Direction** (`/direction`)
 - Tableau de bord (présences du jour, alertes « à traiter »)
@@ -114,6 +115,19 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 - Gestion des groupes, des professionnels (création de compte), des affectations
   (y compris réaffectation en cas d'absence d'une tatie)
 - Gestion des menus du jour
+- Gestion du catalogue de compétences (catégories, âges indicatifs, activation) et
+  correction/suppression des acquisitions enregistrées
+
+**Suivi du développement / compétences** (cahier des charges §90)
+- Catalogue de compétences par catégorie (motricité, langage, socialisation, autonomie,
+  éveil...), personnalisable par la garderie, avec âge indicatif facultatif
+- Enregistrement en un clic côté pro, avec suggestions filtrées par âge de l'enfant et
+  compétences déjà acquises (jamais de validation automatique)
+- Note et lien photo optionnels ; traçabilité des corrections (auteur, date, note d'origine
+  conservée) ; suppression réservée à la direction
+- Espace parent : compteur de compétences par catégorie + timeline chronologique
+- Aucun diagnostic, classement ou comparaison entre enfants : l'absence d'un badge signifie
+  uniquement qu'il n'a pas encore été enregistré comme observé (§90.14)
 
 ## Non implémenté dans cette itération (roadmap V2 / V3 du CDC)
 

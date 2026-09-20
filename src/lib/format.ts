@@ -1,9 +1,15 @@
-export function calculerAge(dateNaissance: Date): string {
+export function ageEnMois(dateNaissance: Date): number {
   const maintenant = new Date();
   let mois =
     (maintenant.getFullYear() - dateNaissance.getFullYear()) * 12 +
     (maintenant.getMonth() - dateNaissance.getMonth());
   if (maintenant.getDate() < dateNaissance.getDate()) mois -= 1;
+  return Math.max(0, mois);
+}
+
+export function calculerAge(dateNaissance: Date): string {
+  const mois = ageEnMois(dateNaissance);
+  const maintenant = new Date();
 
   if (mois < 1) {
     const jours = Math.max(

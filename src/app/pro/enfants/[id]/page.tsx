@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PRO } from "@/lib/session";
 import { getJournalDuJour, getPresenceDuJour } from "@/lib/data";
-import { calculerAge, formatHeure } from "@/lib/format";
+import { getSuggestionsCompetences, getCatalogueGroupe, getAcquisitionsEnfant } from "@/lib/competences";
+import { calculerAge, formatDate, formatHeure } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, HUMEURS, parseJson, resumeEvenement } from "@/lib/journal";
 import {
   ajouterBiberon,
@@ -15,6 +16,7 @@ import {
   ajouterBain,
   ajouterObservation,
   marquerPresence,
+  enregistrerAcquisition,
 } from "./actions";
 
 export default async function FicheEnfantProPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,10 +29,13 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
   });
   if (!enfant) notFound();
 
-  const [journal, presence, activites] = await Promise.all([
+  const [journal, presence, activites, suggestionsCompetences, catalogue, acquisitions] = await Promise.all([
     getJournalDuJour(id),
     getPresenceDuJour(id),
     prisma.activite.findMany({ where: { garderieId: user.garderieId! }, orderBy: { nom: "asc" } }),
+    getSuggestionsCompetences(id, user.garderieId!, enfant.dateNaissance),
+    getCatalogueGroupe(user.garderieId!),
+    getAcquisitionsEnfant(id),
   ]);
 
   const siesteEnCours = [...journal]
@@ -186,6 +191,72 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
           <textarea name="commentaire" rows={2} className="input-large" placeholder="Observation libre..." />
           <button className="btn-secondary w-full">Ajouter</button>
         </form>
+      </div>
+
+      <div className="card space-y-3">
+        <p className="font-semibold">🌱 Compétences & progrès</p>
+        <p className="text-xs text-stone-400">
+          Outil d&apos;observation : l&apos;absence d&apos;un badge signifie seulement qu&apos;il n&apos;a pas
+          encore été enregistré.
+        </p>
+
+        {suggestionsCompetences.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm text-stone-500">💡 Compétences pouvant être observées</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestionsCompetences.map((c) => (
+                <form key={c.id} action={enregistrerAcquisition.bind(null, id)}>
+                  <input type="hidden" name="competenceId" value={c.id} />
+                  <button className="btn-secondary text-sm">
+                    {c.icone ?? c.categorie.icone} {c.nom}
+                  </button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <form action={enregistrerAcquisition.bind(null, id)} className="space-y-2">
+          <select name="competenceId" className="input-large" required defaultValue="">
+            <option value="" disabled>
+              Choisir une compétence dans le catalogue...
+            </option>
+            {catalogue.map((cat) => (
+              <optgroup key={cat.id} label={`${cat.icone ?? ""} ${cat.nom}`}>
+                {cat.competences.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nom}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <textarea name="note" rows={2} className="input-large" placeholder="Note (optionnel)" />
+          <input name="photoUrl" className="input-large" placeholder="Lien photo (optionnel)" />
+          <button className="btn-primary w-full">✓ Valider l&apos;acquisition</button>
+        </form>
+
+        {acquisitions.length > 0 && (
+          <div className="space-y-2 border-t border-stone-100 pt-3">
+            <p className="text-sm text-stone-500">🌱 Historique</p>
+            <ul className="space-y-2">
+              {acquisitions.slice(0, 8).map((a) => (
+                <li key={a.id} className="text-sm">
+                  <p>
+                    <span className="text-lg">{a.competence.icone ?? a.competence.categorie.icone}</span>{" "}
+                    <span className="font-medium">{a.competence.nom}</span>{" "}
+                    <span className="text-stone-400">— {formatDate(a.dateObservation)}</span>
+                  </p>
+                  {a.note && <p className="text-stone-500">« {a.note} »</p>}
+                  <p className="text-xs text-stone-400">
+                    observé par {a.auteur.prenom}
+                    {a.modifiePar && ` · corrigé par ${a.modifiePar.prenom}`}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Timeline */}

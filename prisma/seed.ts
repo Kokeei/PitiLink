@@ -315,6 +315,149 @@ async function main() {
     ],
   });
 
+  // ---------------------------------------------------------------------
+  // Suivi du développement : catégories + catalogue de compétences (§90)
+  // ---------------------------------------------------------------------
+
+  const categoriesData = [
+    { key: "cognition", nom: "Cognition / éveil", icone: "🧠", ordre: 1 },
+    { key: "langage", nom: "Langage et communication", icone: "🗣️", ordre: 2 },
+    { key: "motriciteGlobale", nom: "Motricité globale", icone: "🐾", ordre: 3 },
+    { key: "motriciteFine", nom: "Motricité fine", icone: "✋", ordre: 4 },
+    { key: "socialisation", nom: "Socialisation", icone: "❤️", ordre: 5 },
+    { key: "autonomie", nom: "Autonomie", icone: "🧸", ordre: 6 },
+    { key: "creativite", nom: "Créativité", icone: "🎨", ordre: 7 },
+    { key: "sensoriel", nom: "Éveil sensoriel", icone: "👂", ordre: 8 },
+    { key: "musical", nom: "Éveil musical", icone: "🎵", ordre: 9 },
+  ] as const;
+
+  const categories: Record<(typeof categoriesData)[number]["key"], { id: string }> = {} as never;
+  for (const c of categoriesData) {
+    categories[c.key] = await prisma.categorieCompetence.create({
+      data: { garderieId: garderie.id, nom: c.nom, icone: c.icone, ordre: c.ordre },
+    });
+  }
+
+  const competencesData: {
+    categorie: (typeof categoriesData)[number]["key"];
+    nom: string;
+    icone: string;
+    ageMin?: number;
+    ageMax?: number;
+  }[] = [
+    // Motricité globale
+    { categorie: "motriciteGlobale", nom: "Se retourne", icone: "🐾", ageMin: 3, ageMax: 5 },
+    { categorie: "motriciteGlobale", nom: "Se met sur le ventre", icone: "🐾", ageMin: 2, ageMax: 4 },
+    { categorie: "motriciteGlobale", nom: "Rampe", icone: "🐾", ageMin: 6, ageMax: 10 },
+    { categorie: "motriciteGlobale", nom: "Marche à quatre pattes", icone: "🐾", ageMin: 7, ageMax: 10 },
+    { categorie: "motriciteGlobale", nom: "Se met debout", icone: "🧍", ageMin: 8, ageMax: 12 },
+    { categorie: "motriciteGlobale", nom: "Se déplace avec appui", icone: "🐾", ageMin: 9, ageMax: 13 },
+    { categorie: "motriciteGlobale", nom: "Premiers pas", icone: "🏆", ageMin: 10, ageMax: 14 },
+    { categorie: "motriciteGlobale", nom: "Marche seul", icone: "🚶", ageMin: 12, ageMax: 18 },
+    { categorie: "motriciteGlobale", nom: "Monte quelques marches", icone: "🐾", ageMin: 15, ageMax: 24 },
+    // Motricité fine
+    { categorie: "motriciteFine", nom: "Attrape un objet", icone: "✋", ageMin: 3, ageMax: 5 },
+    { categorie: "motriciteFine", nom: "Passe un objet d'une main à l'autre", icone: "✋", ageMin: 5, ageMax: 7 },
+    { categorie: "motriciteFine", nom: "Applaudit", icone: "👏", ageMin: 6, ageMax: 10 },
+    { categorie: "motriciteFine", nom: "Empile des cubes", icone: "🧩", ageMin: 12, ageMax: 18 },
+    { categorie: "motriciteFine", nom: "Encastre une forme", icone: "✋", ageMin: 15, ageMax: 24 },
+    { categorie: "motriciteFine", nom: "Tourne les pages d'un livre", icone: "📖", ageMin: 12, ageMax: 18 },
+    { categorie: "motriciteFine", nom: "Tient un crayon", icone: "✏️", ageMin: 18, ageMax: 24 },
+    { categorie: "motriciteFine", nom: "Dessine / gribouille", icone: "🎨", ageMin: 18, ageMax: 30 },
+    // Langage et communication
+    { categorie: "langage", nom: "Réagit à son prénom", icone: "🗣️", ageMin: 4, ageMax: 7 },
+    { categorie: "langage", nom: "Imite des sons", icone: "🗣️", ageMin: 6, ageMax: 9 },
+    { categorie: "langage", nom: "Fait coucou", icone: "👋", ageMin: 8, ageMax: 12 },
+    { categorie: "langage", nom: "Pointe du doigt", icone: "👉", ageMin: 9, ageMax: 13 },
+    { categorie: "langage", nom: "Utilise un geste pour demander", icone: "🗣️", ageMin: 10, ageMax: 14 },
+    { categorie: "langage", nom: "Premiers mots", icone: "🗣️", ageMin: 10, ageMax: 16 },
+    { categorie: "langage", nom: "Assemble plusieurs mots", icone: "🗣️", ageMin: 18, ageMax: 24 },
+    { categorie: "langage", nom: "Participe à une conversation", icone: "🗣️", ageMin: 24, ageMax: 36 },
+    // Socialisation
+    { categorie: "socialisation", nom: "Sourit en réponse à une interaction", icone: "❤️", ageMin: 1, ageMax: 3 },
+    { categorie: "socialisation", nom: "Imite les autres enfants", icone: "❤️", ageMin: 12, ageMax: 18 },
+    { categorie: "socialisation", nom: "Participe à un jeu collectif", icone: "❤️", ageMin: 18, ageMax: 30 },
+    { categorie: "socialisation", nom: "Joue avec les autres", icone: "❤️", ageMin: 24, ageMax: 36 },
+    { categorie: "socialisation", nom: "Attend son tour", icone: "❤️", ageMin: 24, ageMax: 36 },
+    { categorie: "socialisation", nom: "Partage un jeu ou un objet", icone: "❤️", ageMin: 24, ageMax: 36 },
+    // Autonomie
+    { categorie: "autonomie", nom: "Mange avec les doigts", icone: "🧸", ageMin: 8, ageMax: 12 },
+    { categorie: "autonomie", nom: "Mange à la cuillère", icone: "🥄", ageMin: 12, ageMax: 18 },
+    { categorie: "autonomie", nom: "Boit seul", icone: "🧸", ageMin: 12, ageMax: 18 },
+    { categorie: "autonomie", nom: "Participe à l'habillage", icone: "🧸", ageMin: 18, ageMax: 24 },
+    { categorie: "autonomie", nom: "Range un jouet", icone: "🧸", ageMin: 18, ageMax: 24 },
+    { categorie: "autonomie", nom: "Se lave les mains avec accompagnement", icone: "🧸", ageMin: 18, ageMax: 24 },
+    { categorie: "autonomie", nom: "Participe au rangement", icone: "🧸", ageMin: 24, ageMax: 36 },
+    // Éveil / activités
+    { categorie: "cognition", nom: "Écoute une histoire", icone: "🧠", ageMin: 6, ageMax: 12 },
+    { categorie: "cognition", nom: "Suit une consigne simple", icone: "🧠", ageMin: 12, ageMax: 18 },
+    { categorie: "cognition", nom: "Reproduit un geste ou un mouvement", icone: "🧠", ageMin: 9, ageMax: 15 },
+    { categorie: "creativite", nom: "Participe à une activité artistique", icone: "🎨", ageMin: 9, ageMax: 18 },
+    { categorie: "sensoriel", nom: "Participe à une activité sensorielle", icone: "👂", ageMin: 3, ageMax: 12 },
+    { categorie: "musical", nom: "Participe à une activité musicale", icone: "🎵", ageMin: 3, ageMax: 12 },
+  ];
+
+  const competences: Record<string, { id: string }> = {};
+  for (const [index, c] of competencesData.entries()) {
+    competences[c.nom] = await prisma.competence.create({
+      data: {
+        garderieId: garderie.id,
+        categorieId: categories[c.categorie].id,
+        nom: c.nom,
+        icone: c.icone,
+        ordreAffichage: index,
+        ageIndicatifMoisMin: c.ageMin,
+        ageIndicatifMoisMax: c.ageMax,
+      },
+    });
+  }
+
+  const ilYA = (jours: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - jours);
+    return d;
+  };
+
+  await prisma.acquisitionCompetence.createMany({
+    data: [
+      {
+        garderieId: garderie.id,
+        enfantId: kiivai.id,
+        competenceId: competences["Fait coucou"].id,
+        groupeId: groupeBebes.id,
+        auteurId: ana.id,
+        dateObservation: ilYA(18),
+        note: "A fait coucou de lui-même en fin de journée.",
+      },
+      {
+        garderieId: garderie.id,
+        enfantId: kiivai.id,
+        competenceId: competences["Applaudit"].id,
+        groupeId: groupeBebes.id,
+        auteurId: ana.id,
+        dateObservation: ilYA(12),
+      },
+      {
+        garderieId: garderie.id,
+        enfantId: kiivai.id,
+        competenceId: competences["Se met debout"].id,
+        groupeId: groupeBebes.id,
+        auteurId: ana.id,
+        dateObservation: ilYA(5),
+        note: "Se met debout en s'appuyant sur le canapé.",
+      },
+      {
+        garderieId: garderie.id,
+        enfantId: kiivai.id,
+        competenceId: competences["Marche à quatre pattes"].id,
+        groupeId: groupeBebes.id,
+        auteurId: ana.id,
+        dateObservation: aujourdhui,
+        note: "S'est déplacée seule sur plusieurs mètres.",
+      },
+    ],
+  });
+
   console.log("Seed terminé.");
   console.log("Comptes de démonstration (mot de passe :", MOT_DE_PASSE_DEMO, ")");
   console.log("  Direction     : direction.demo@pitilink.local");

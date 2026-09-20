@@ -206,3 +206,32 @@ export async function marquerPresence(enfantId: string, type: "arrivee" | "depar
 
   revalider(enfantId);
 }
+
+export async function enregistrerAcquisition(enfantId: string, formData: FormData) {
+  const { user, enfant } = await contexte(enfantId);
+  const competenceId = formData.get("competenceId") as string;
+  const note = (formData.get("note") as string) || undefined;
+  const photoUrl = (formData.get("photoUrl") as string) || undefined;
+  if (!competenceId) return;
+
+  const competence = await prisma.competence.findFirst({
+    where: { id: competenceId, garderieId: enfant.garderieId },
+  });
+  if (!competence) return;
+
+  await prisma.acquisitionCompetence.create({
+    data: {
+      garderieId: enfant.garderieId,
+      enfantId,
+      competenceId,
+      groupeId: enfant.groupeId,
+      auteurId: user.id,
+      note,
+      photoUrl,
+    },
+  });
+
+  revalidatePath(`/pro/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}

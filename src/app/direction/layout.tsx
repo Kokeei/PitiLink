@@ -9,6 +9,7 @@ const LIENS = [
   { href: "/direction/professionnels", label: "🧑‍🏫 Professionnels" },
   { href: "/direction/affectations", label: "🔗 Affectations" },
   { href: "/direction/menus", label: "🍽️ Menus" },
+  { href: "/direction/competences", label: "🌱 Compétences" },
 ];
 
 export default async function DirectionLayout({ children }: { children: React.ReactNode }) {

@@ -4,6 +4,7 @@ import { requireUser, ROLES_PARENT } from "@/lib/session";
 import { getJournalDuJour } from "@/lib/data";
 import { calculerAge, formatDate, formatHeure, debutJournee } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, parseJson, resumeEvenement } from "@/lib/journal";
+import { getResumeParCategorie, getAcquisitionsEnfant } from "@/lib/competences";
 import { ajouterMesureCroissance, transmettreInformation, ajouterContactUrgence } from "./actions";
 
 export default async function FicheEnfantParentPage({
@@ -47,6 +48,11 @@ export default async function FicheEnfantParentPage({
   const petitMot = journal.find(
     (e) => e.type === "OBSERVATION" && e.commentaire && !e.commentaire.startsWith("[Transmission parent]")
   );
+
+  const [resumeCompetences, acquisitions] = await Promise.all([
+    getResumeParCategorie(id),
+    getAcquisitionsEnfant(id),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -173,6 +179,44 @@ export default async function FicheEnfantParentPage({
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      {/* Progrès / compétences */}
+      <div className="card space-y-3">
+        <p className="font-semibold">🌱 Les progrès de {enfant.prenom}</p>
+        <p className="text-xs text-stone-400">
+          Outil d&apos;observation et de valorisation : l&apos;absence d&apos;un badge signifie seulement
+          qu&apos;il n&apos;a pas encore été enregistré comme observé.
+        </p>
+
+        {resumeCompetences.total > 0 ? (
+          <>
+            <p className="text-sm">🏆 {resumeCompetences.total} compétence(s) observée(s)</p>
+            <div className="flex flex-wrap gap-2">
+              {resumeCompetences.parCategorie.map((c) => (
+                <span key={c.nom} className="pill bg-orange-50 text-orange-800">
+                  {c.icone} {c.nom} — {c.total}
+                </span>
+              ))}
+            </div>
+
+            <ul className="space-y-3 border-t border-stone-100 pt-3">
+              {acquisitions.map((a) => (
+                <li key={a.id} className="flex gap-3">
+                  <span className="text-xl">{a.competence.icone ?? a.competence.categorie.icone}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {a.competence.nom} <span className="font-normal text-stone-400">— {formatDate(a.dateObservation)}</span>
+                    </p>
+                    {a.note && <p className="text-sm text-stone-500">« {a.note} »</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="text-sm text-stone-500">Aucune compétence enregistrée pour le moment.</p>
         )}
       </div>
 
