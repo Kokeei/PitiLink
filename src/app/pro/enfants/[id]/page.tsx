@@ -88,10 +88,14 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
                 👋 Départ {presence?.heureDepart ? `· ${formatHeure(presence.heureDepart)}` : ""}
               </button>
             </form>
-            <form action={modifierPhotoEnfant.bind(null, id)} className="flex items-center gap-2">
-              <input type="file" name="photo" accept="image/*" className="text-xs" />
-              <button className="btn-secondary text-xs">Changer la photo</button>
-            </form>
+            {enfant.autorisationPhotos === "AUTORISEE" ? (
+              <form action={modifierPhotoEnfant.bind(null, id)} className="flex items-center gap-2">
+                <input type="file" name="photo" accept="image/*" className="text-xs" />
+                <button className="btn-secondary text-xs">Changer la photo</button>
+              </form>
+            ) : (
+              <p className="text-xs text-amber-700">⚠️ Diffusion photo non autorisée</p>
+            )}
           </>
         }
       />
@@ -138,7 +142,11 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
                 </div>
                 <div className="space-y-4">
                   <CarteParents parents={enfant.parents} />
-                  <GaleriePhotos photos={enfant.photos} ajouterAction={ajouterPhotoSouvenir.bind(null, id)} />
+                  <GaleriePhotos
+                    photos={enfant.photos}
+                    ajouterAction={ajouterPhotoSouvenir.bind(null, id)}
+                    autorisation={enfant.autorisationPhotos}
+                  />
                 </div>
               </div>
             ),

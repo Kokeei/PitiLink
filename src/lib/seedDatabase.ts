@@ -116,6 +116,7 @@ export async function seedDatabase(prisma: PrismaClient) {
       dateInscription: new Date("2025-12-01"),
       dateDebutAccueil: new Date("2026-01-05"),
       statut: "ACTIF",
+      autorisationPhotos: "AUTORISEE",
     },
   });
 
@@ -129,6 +130,7 @@ export async function seedDatabase(prisma: PrismaClient) {
       dateInscription: new Date("2025-08-01"),
       dateDebutAccueil: new Date("2025-09-01"),
       statut: "ACTIF",
+      autorisationPhotos: "AUTORISEE",
     },
   });
 

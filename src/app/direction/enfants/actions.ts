@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { uploaderFichier } from "@/lib/blob";
-import type { StatutEnfant, TypeInfoImportante, LienFamilial, TypeDocument } from "@/generated/prisma/enums";
+import type { StatutEnfant, TypeInfoImportante, LienFamilial, TypeDocument, AutorisationDiffusion } from "@/generated/prisma/enums";
 
 export async function creerEnfant(formData: FormData) {
   const user = await requireUser(ROLES_DIRECTION);
@@ -52,10 +52,11 @@ export async function modifierFicheEnfant(enfantId: string, formData: FormData) 
   const statut = formData.get("statut") as StatutEnfant;
   const groupeId = (formData.get("groupeId") as string) || null;
   const adresse = (formData.get("adresse") as string) || null;
+  const autorisationPhotos = formData.get("autorisationPhotos") as AutorisationDiffusion;
 
   await prisma.enfant.update({
     where: { id: enfantId },
-    data: { statut, groupeId, adresse },
+    data: { statut, groupeId, adresse, autorisationPhotos },
   });
 
   for (const p of enfant.parents) {
@@ -195,7 +196,7 @@ export async function modifierPhotoEnfant(enfantId: string, formData: FormData) 
   const fichier = formData.get("photo") as File | null;
 
   const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
-  if (!enfant) return;
+  if (!enfant || enfant.autorisationPhotos !== "AUTORISEE") return;
 
   const url = await uploaderFichier(fichier, `enfants/${enfantId}/profil`);
   if (!url) return;
@@ -213,7 +214,7 @@ export async function ajouterPhotoSouvenir(enfantId: string, formData: FormData)
   const legende = (formData.get("legende") as string) || undefined;
 
   const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
-  if (!enfant) return;
+  if (!enfant || enfant.autorisationPhotos !== "AUTORISEE") return;
 
   const url = await uploaderFichier(fichier, `enfants/${enfantId}/souvenirs`);
   if (!url) return;
