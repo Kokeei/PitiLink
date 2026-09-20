@@ -47,7 +47,11 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 1. **Neon** : créer un projet, copier la chaîne de connexion **pooled** (`...-pooler...neon.tech/...`).
 2. **Vercel** : importer le dépôt GitHub, puis renseigner ces variables d'environnement
    (Project Settings → Environment Variables) :
-   - `DATABASE_URL` — la chaîne Neon
+   - `DATABASE_URL` — la chaîne Neon **pooled**
+   - `DIRECT_URL` — la chaîne Neon **directe** (sans `-pooler` dans l'hôte, désactiver
+     "Connection pooling" dans Neon pour l'obtenir). Utilisée uniquement pour les
+     migrations : `prisma migrate deploy` échoue avec "Timed out trying to acquire
+     a postgres advisory lock" si on lui passe une connexion PgBouncer.
    - `AUTH_SECRET` — générer avec `openssl rand -base64 32`
    - `AUTH_TRUST_HOST` — `true`
    - `SETUP_TOKEN` — une chaîne aléatoire, sert uniquement à protéger l'étape 4
