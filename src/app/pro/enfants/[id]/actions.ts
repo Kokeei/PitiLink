@@ -235,3 +235,32 @@ export async function enregistrerAcquisition(enfantId: string, formData: FormDat
   revalidatePath(`/parent/enfants/${enfantId}`);
   revalidatePath(`/direction/enfants/${enfantId}`);
 }
+
+export async function enregistrerAcquisitions(enfantId: string, formData: FormData) {
+  const { user, enfant } = await contexte(enfantId);
+  const competenceIds = formData.getAll("competenceIds") as string[];
+  const note = (formData.get("note") as string) || undefined;
+  const photoUrl = (formData.get("photoUrl") as string) || undefined;
+  if (competenceIds.length === 0) return;
+
+  const competences = await prisma.competence.findMany({
+    where: { id: { in: competenceIds }, garderieId: enfant.garderieId },
+    select: { id: true },
+  });
+
+  await prisma.acquisitionCompetence.createMany({
+    data: competences.map((c) => ({
+      garderieId: enfant.garderieId,
+      enfantId,
+      competenceId: c.id,
+      groupeId: enfant.groupeId,
+      auteurId: user.id,
+      note,
+      photoUrl,
+    })),
+  });
+
+  revalidatePath(`/pro/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+  revalidatePath(`/direction/enfants/${enfantId}`);
+}
