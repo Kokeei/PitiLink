@@ -40,7 +40,11 @@ export default auth((req) => {
     return NextResponse.redirect(new URL(espace, nextUrl.origin));
   }
 
-  if (!nextUrl.pathname.startsWith(espace)) {
+  // /compte est un espace transversal (changer son mot de passe...),
+  // accessible à tout utilisateur connecté quel que soit son rôle.
+  const isCompte = nextUrl.pathname.startsWith("/compte");
+
+  if (!isCompte && !nextUrl.pathname.startsWith(espace)) {
     return NextResponse.redirect(new URL(espace, nextUrl.origin));
   }
 

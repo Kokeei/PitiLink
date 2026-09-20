@@ -4,14 +4,8 @@ import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { calculerAge, formatDate } from "@/lib/format";
 import { DonutChart } from "@/components/DonutChart";
 import { creerEnfant } from "./actions";
+import { STATUTS_ENFANT_PILL } from "@/lib/badges";
 import type { StatutEnfant } from "@/generated/prisma/enums";
-
-const STATUTS_PILL: Record<string, string> = {
-  ACTIF: "bg-green-100 text-green-700",
-  SUSPENDU: "bg-amber-100 text-amber-700",
-  SORTI: "bg-stone-200 text-stone-600",
-  ARCHIVE: "bg-stone-200 text-stone-500",
-};
 
 function prochainAnniversaire(dateNaissance: Date): Date {
   const aujourdhui = new Date();
@@ -35,7 +29,16 @@ export default async function EnfantsPage({
     prisma.enfant.findMany({
       where: {
         garderieId,
-        ...(q ? { OR: [{ prenom: { contains: q, mode: "insensitive" } }, { nom: { contains: q, mode: "insensitive" } }] } : {}),
+        ...(q
+          ? {
+              OR: [
+                { prenom: { contains: q, mode: "insensitive" } },
+                { nom: { contains: q, mode: "insensitive" } },
+                { parents: { some: { user: { prenom: { contains: q, mode: "insensitive" } } } } },
+                { parents: { some: { user: { nom: { contains: q, mode: "insensitive" } } } } },
+              ],
+            }
+          : {}),
         ...(groupeId ? { groupeId } : {}),
         ...(statut ? { statut: statut as StatutEnfant } : {}),
       },
@@ -135,7 +138,7 @@ export default async function EnfantsPage({
                   <td>{e.groupe?.nom ?? "Sans groupe"}</td>
                   <td>{calculerAge(e.dateNaissance)}</td>
                   <td>
-                    <span className={`pill ${STATUTS_PILL[e.statut] ?? "bg-stone-100"}`}>{e.statut}</span>
+                    <span className={`pill ${STATUTS_ENFANT_PILL[e.statut] ?? "bg-stone-100"}`}>{e.statut}</span>
                   </td>
                   <td>
                     {critique ? (

@@ -17,6 +17,7 @@ import {
   modifierPhotoEnfant,
   ajouterParent,
   definirContactUrgencePrincipal,
+  reinitialiserMotDePasseParent,
   retirerParent,
   ajouterInfoImportante,
   supprimerInfoImportante,
@@ -244,7 +245,7 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
                               </select>
                             </div>
 
-                            <div className="flex items-center justify-between border-t border-stone-100 pt-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-100 pt-2">
                               {p.estContactUrgence ? (
                                 <span className="pill bg-orange-100 text-orange-700">★ Contact d&apos;urgence principal</span>
                               ) : (
@@ -258,6 +259,22 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
                               )}
                               <button type="submit" formAction={retirerParent.bind(null, id, p.id)} className="text-xs text-red-600">
                                 Retirer
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2 border-t border-stone-100 pt-2">
+                              <input
+                                name={`nouveauMotDePasse_${p.id}`}
+                                type="password"
+                                placeholder="Nouveau mot de passe"
+                                minLength={8}
+                                className="input-large flex-1 text-xs"
+                              />
+                              <button
+                                type="submit"
+                                formAction={reinitialiserMotDePasseParent.bind(null, p.userId, p.id)}
+                                className="btn-secondary shrink-0 text-xs"
+                              >
+                                🔑 Réinitialiser
                               </button>
                             </div>
                           </div>

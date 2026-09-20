@@ -2,18 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { DonutChart } from "@/components/DonutChart";
-import { creerProfessionnel } from "./actions";
+import { creerProfessionnel, reinitialiserMotDePasseProfessionnel } from "./actions";
+import { LIBELLES_ROLE, ROLE_PILL } from "@/lib/badges";
 import type { Role } from "@/generated/prisma/enums";
-
-const LIBELLES_ROLE: Record<string, string> = {
-  PROFESSIONNEL: "Professionnel",
-  RESPONSABLE: "Responsable",
-};
-
-const ROLE_PILL: Record<string, string> = {
-  PROFESSIONNEL: "bg-blue-100 text-blue-700",
-  RESPONSABLE: "bg-violet-100 text-violet-700",
-};
 
 export default async function ProfessionnelsPage({
   searchParams,
@@ -113,6 +104,7 @@ export default async function ProfessionnelsPage({
                 <th className="pb-2">Rôle</th>
                 <th className="pb-2">Groupes</th>
                 <th className="pb-2">Enfants en charge</th>
+                <th className="pb-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -145,12 +137,33 @@ export default async function ProfessionnelsPage({
                       )}
                     </td>
                     <td>{nbEnfants}</td>
+                    <td>
+                      <details className="relative">
+                        <summary className="cursor-pointer select-none text-xs text-stone-500 hover:text-stone-700">
+                          🔑 Mot de passe
+                        </summary>
+                        <form
+                          action={reinitialiserMotDePasseProfessionnel.bind(null, p.id)}
+                          className="absolute right-0 z-10 mt-1 flex w-56 flex-col gap-2 rounded-xl border border-stone-200 bg-white p-3 shadow-md"
+                        >
+                          <input
+                            name="nouveauMotDePasse"
+                            type="password"
+                            placeholder="Nouveau mot de passe"
+                            minLength={8}
+                            required
+                            className="input-large text-xs"
+                          />
+                          <button className="btn-secondary text-xs">Réinitialiser</button>
+                        </form>
+                      </details>
+                    </td>
                   </tr>
                 );
               })}
               {professionnels.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-stone-500">
+                  <td colSpan={6} className="py-4 text-center text-stone-500">
                     Aucun professionnel ne correspond à ces critères.
                   </td>
                 </tr>

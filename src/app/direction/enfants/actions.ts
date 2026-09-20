@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { uploaderFichier } from "@/lib/blob";
+import { reinitialiserMotDePasse } from "@/lib/comptes";
 import type { StatutEnfant, TypeInfoImportante, LienFamilial, TypeDocument, AutorisationDiffusion } from "@/generated/prisma/enums";
 
 export async function creerEnfant(formData: FormData) {
@@ -128,6 +129,12 @@ export async function definirContactUrgencePrincipal(enfantId: string, parentEnf
   await prisma.parentEnfant.update({ where: { id: parentEnfantId }, data: { estContactUrgence: true } });
 
   revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+export async function reinitialiserMotDePasseParent(parentUserId: string, parentEnfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const nouveauMotDePasse = formData.get(`nouveauMotDePasse_${parentEnfantId}`) as string;
+  await reinitialiserMotDePasse(user.garderieId!, parentUserId, nouveauMotDePasse);
 }
 
 export async function retirerParent(enfantId: string, parentEnfantId: string) {

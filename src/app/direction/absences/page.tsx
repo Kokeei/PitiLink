@@ -1,17 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { formatDate } from "@/lib/format";
-import { calculerImpactFacturation, LIBELLES_TYPE_ABSENCE } from "@/lib/absences";
+import {
+  calculerImpactFacturation,
+  LIBELLES_TYPE_ABSENCE,
+  IMPACT_FACTURATION_PILL,
+  IMPACT_FACTURATION_LABEL,
+} from "@/lib/absences";
 import { modifierReglesAbsence, annulerAbsence } from "./actions";
-
-const IMPACT_PILL: Record<string, string> = {
-  DECOMPTEE: "bg-emerald-100 text-emerald-700",
-  FACTUREE: "bg-red-100 text-red-700",
-};
-const IMPACT_LABEL: Record<string, string> = {
-  DECOMPTEE: "🟢 Décomptée",
-  FACTUREE: "🔴 Facturée",
-};
 
 export default async function AbsencesDirectionPage() {
   const user = await requireUser(ROLES_DIRECTION);
@@ -127,8 +123,8 @@ export default async function AbsencesDirectionPage() {
                     {annulee ? (
                       <span className="pill bg-stone-100 text-stone-500">Annulée</span>
                     ) : (
-                      <span className={`pill ${IMPACT_PILL[impact]}`} title={motif}>
-                        {IMPACT_LABEL[impact]}
+                      <span className={`pill ${IMPACT_FACTURATION_PILL[impact]}`} title={motif}>
+                        {IMPACT_FACTURATION_LABEL[impact]}
                       </span>
                     )}
                   </td>
