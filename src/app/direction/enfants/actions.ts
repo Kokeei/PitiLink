@@ -32,28 +32,45 @@ export async function creerEnfant(formData: FormData) {
   redirect(`/direction/enfants/${enfant.id}`);
 }
 
-export async function modifierStatutEnfant(enfantId: string, formData: FormData) {
+const MAX_PARENTS = 2;
+
+/**
+ * Enregistre en un seul clic : statut, groupe, adresse, et les coordonnées
+ * de chaque parent déjà lié (identifiés par leur ParentEnfant.id, transmis
+ * en input caché côté formulaire).
+ */
+export async function modifierFicheEnfant(enfantId: string, formData: FormData) {
   const user = await requireUser(ROLES_DIRECTION);
+
+  const enfant = await prisma.enfant.findFirst({
+    where: { id: enfantId, garderieId: user.garderieId! },
+    include: { parents: true },
+  });
+  if (!enfant) return;
+
   const statut = formData.get("statut") as StatutEnfant;
   const groupeId = (formData.get("groupeId") as string) || null;
-
-  await prisma.enfant.update({
-    where: { id: enfantId, garderieId: user.garderieId! },
-    data: { statut, groupeId },
-  });
-  revalidatePath(`/direction/enfants/${enfantId}`);
-  revalidatePath("/direction/enfants");
-}
-
-export async function modifierAdresse(enfantId: string, formData: FormData) {
-  const user = await requireUser(ROLES_DIRECTION);
   const adresse = (formData.get("adresse") as string) || null;
 
   await prisma.enfant.update({
-    where: { id: enfantId, garderieId: user.garderieId! },
-    data: { adresse },
+    where: { id: enfantId },
+    data: { statut, groupeId, adresse },
   });
+
+  for (const p of enfant.parents) {
+    const prenom = formData.get(`parent_${p.id}_prenom`) as string | null;
+    const nom = formData.get(`parent_${p.id}_nom`) as string | null;
+    const email = formData.get(`parent_${p.id}_email`) as string | null;
+    const telephone = (formData.get(`parent_${p.id}_telephone`) as string) || null;
+    const lien = formData.get(`parent_${p.id}_lien`) as LienFamilial | null;
+    if (!prenom || !nom || !email || !lien) continue;
+
+    await prisma.user.update({ where: { id: p.userId }, data: { prenom, nom, email, telephone } });
+    await prisma.parentEnfant.update({ where: { id: p.id }, data: { lien } });
+  }
+
   revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath("/direction/enfants");
 }
 
 export async function ajouterParent(enfantId: string, formData: FormData) {
@@ -67,8 +84,11 @@ export async function ajouterParent(enfantId: string, formData: FormData) {
   const estContactUrgence = formData.get("estContactUrgence") === "on";
   if (!prenom || !nom || !email || !motDePasse) return;
 
-  const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
-  if (!enfant) return;
+  const enfant = await prisma.enfant.findFirst({
+    where: { id: enfantId, garderieId: user.garderieId! },
+    include: { _count: { select: { parents: true } } },
+  });
+  if (!enfant || enfant._count.parents >= MAX_PARENTS) return;
 
   const passwordHash = await bcrypt.hash(motDePasse, 10);
 
@@ -91,29 +111,6 @@ export async function ajouterParent(enfantId: string, formData: FormData) {
   await prisma.parentEnfant.create({
     data: { enfantId, userId: parent.id, lien, estContactUrgence },
   });
-
-  revalidatePath(`/direction/enfants/${enfantId}`);
-}
-
-export async function modifierParent(enfantId: string, parentEnfantId: string, formData: FormData) {
-  const user = await requireUser(ROLES_DIRECTION);
-  const prenom = formData.get("prenom") as string;
-  const nom = formData.get("nom") as string;
-  const email = formData.get("email") as string;
-  const telephone = (formData.get("telephone") as string) || null;
-  const lien = formData.get("lien") as LienFamilial;
-  if (!prenom || !nom || !email) return;
-
-  const lienParent = await prisma.parentEnfant.findFirst({
-    where: { id: parentEnfantId, enfantId, enfant: { garderieId: user.garderieId! } },
-  });
-  if (!lienParent) return;
-
-  await prisma.user.update({
-    where: { id: lienParent.userId },
-    data: { prenom, nom, email, telephone },
-  });
-  await prisma.parentEnfant.update({ where: { id: parentEnfantId }, data: { lien } });
 
   revalidatePath(`/direction/enfants/${enfantId}`);
 }

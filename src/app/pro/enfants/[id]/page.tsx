@@ -17,6 +17,7 @@ import {
   ajouterObservation,
   marquerPresence,
   enregistrerAcquisition,
+  enregistrerAcquisitions,
 } from "./actions";
 
 export default async function FicheEnfantProPage({ params }: { params: Promise<{ id: string }> }) {
@@ -216,24 +217,30 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
           </div>
         )}
 
-        <form action={enregistrerAcquisition.bind(null, id)} className="space-y-2">
-          <select name="competenceId" className="input-large" required defaultValue="">
-            <option value="" disabled>
-              Choisir une compétence dans le catalogue...
-            </option>
-            {catalogue.map((cat) => (
-              <optgroup key={cat.id} label={`${cat.icone ?? ""} ${cat.nom}`}>
-                {cat.competences.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nom}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          <textarea name="note" rows={2} className="input-large" placeholder="Note (optionnel)" />
+        <form action={enregistrerAcquisitions.bind(null, id)} className="space-y-2">
+          <details className="rounded-xl border-2 border-stone-200">
+            <summary className="cursor-pointer select-none rounded-xl px-4 py-3 text-base font-medium">
+              📋 Choisir une ou plusieurs compétences dans le catalogue...
+            </summary>
+            <div className="max-h-72 space-y-3 overflow-y-auto border-t border-stone-200 p-3">
+              {catalogue.map((cat) => (
+                <div key={cat.id}>
+                  <p className="mb-1 text-xs font-semibold text-stone-500">
+                    {cat.icone} {cat.nom}
+                  </p>
+                  {cat.competences.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 py-1.5 text-sm">
+                      <input type="checkbox" name="competenceIds" value={c.id} className="h-5 w-5" />
+                      {c.icone} {c.nom}
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </details>
+          <textarea name="note" rows={2} className="input-large" placeholder="Note (optionnel, appliquée à chaque compétence cochée)" />
           <input name="photoUrl" className="input-large" placeholder="Lien photo (optionnel)" />
-          <button className="btn-primary w-full">✓ Valider l&apos;acquisition</button>
+          <button className="btn-primary w-full">✓ Valider les compétences sélectionnées</button>
         </form>
 
         {acquisitions.length > 0 && (
