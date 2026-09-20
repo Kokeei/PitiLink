@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
+import { reinitialiserMotDePasse } from "@/lib/comptes";
 import type { Role } from "@/generated/prisma/enums";
 
 export async function creerProfessionnel(formData: FormData) {
@@ -30,5 +31,12 @@ export async function creerProfessionnel(formData: FormData) {
     },
   });
 
+  revalidatePath("/direction/professionnels");
+}
+
+export async function reinitialiserMotDePasseProfessionnel(professionnelId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const nouveauMotDePasse = formData.get("nouveauMotDePasse") as string;
+  await reinitialiserMotDePasse(user.garderieId!, professionnelId, nouveauMotDePasse);
   revalidatePath("/direction/professionnels");
 }

@@ -16,6 +16,16 @@ export type ReglesFacturationAbsence = {
 
 export type ImpactFacturation = "DECOMPTEE" | "FACTUREE";
 
+export const IMPACT_FACTURATION_PILL: Record<ImpactFacturation, string> = {
+  DECOMPTEE: "bg-emerald-100 text-emerald-700",
+  FACTUREE: "bg-red-100 text-red-700",
+};
+
+export const IMPACT_FACTURATION_LABEL: Record<ImpactFacturation, string> = {
+  DECOMPTEE: "🟢 Décomptée",
+  FACTUREE: "🔴 Facturée",
+};
+
 /**
  * Calcule l'incidence financière d'une absence à partir des règles propres à
  * la garderie (paramétrables, car chaque structure a son propre fonctionnement).

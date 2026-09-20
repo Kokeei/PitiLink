@@ -2,17 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PARENT } from "@/lib/session";
 import { getEnfantsDuParent } from "@/lib/data";
 import { formatDate } from "@/lib/format";
-import { calculerImpactFacturation, LIBELLES_TYPE_ABSENCE } from "@/lib/absences";
+import {
+  calculerImpactFacturation,
+  LIBELLES_TYPE_ABSENCE,
+  IMPACT_FACTURATION_PILL,
+  IMPACT_FACTURATION_LABEL,
+} from "@/lib/absences";
 import { declarerAbsence } from "./actions";
-
-const IMPACT_PILL: Record<string, string> = {
-  DECOMPTEE: "bg-emerald-100 text-emerald-700",
-  FACTUREE: "bg-red-100 text-red-700",
-};
-const IMPACT_LABEL: Record<string, string> = {
-  DECOMPTEE: "🟢 Décomptée",
-  FACTUREE: "🔴 Facturée",
-};
 
 export default async function AbsencesPage() {
   const user = await requireUser(ROLES_PARENT);
@@ -95,7 +91,7 @@ export default async function AbsencesPage() {
               {annulee ? (
                 <span className="pill bg-stone-100 text-stone-500">Annulée</span>
               ) : (
-                <span className={`pill ${IMPACT_PILL[impact]}`}>{IMPACT_LABEL[impact]}</span>
+                <span className={`pill ${IMPACT_FACTURATION_PILL[impact]}`}>{IMPACT_FACTURATION_LABEL[impact]}</span>
               )}
             </div>
           );

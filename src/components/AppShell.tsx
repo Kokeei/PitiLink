@@ -4,16 +4,9 @@ import { DeconnexionButton } from "@/components/DeconnexionButton";
 import { Sidebar, NavMobile } from "@/components/Sidebar";
 import { marquerNotificationsLues } from "@/app/actions";
 import { formatDate } from "@/lib/format";
+import { LIBELLES_ROLE } from "@/lib/badges";
 
 type Item = { href: string; label: string; icone: string };
-
-const LIBELLES_ROLE: Record<string, string> = {
-  PARENT: "Parent",
-  PROFESSIONNEL: "Professionnel",
-  RESPONSABLE: "Responsable",
-  DIRECTION: "Direction",
-  ADMIN_PLATEFORME: "Administrateur",
-};
 
 function initiales(nom: string) {
   return nom
@@ -118,7 +111,10 @@ export async function AppShell({
                 <span className="block text-xs leading-tight text-stone-400">{LIBELLES_ROLE[role] ?? role}</span>
               </span>
             </summary>
-            <div className="absolute right-0 z-10 mt-2 w-40 rounded-xl border border-stone-200 bg-white p-2 shadow-md">
+            <div className="absolute right-0 z-10 mt-2 w-44 rounded-xl border border-stone-200 bg-white p-2 shadow-md">
+              <Link href="/compte" className="block rounded-lg px-3 py-2 text-sm hover:bg-stone-50">
+                🔑 Mon compte
+              </Link>
               <DeconnexionButton />
             </div>
           </details>

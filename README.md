@@ -18,6 +18,7 @@ modèle **prévu → réel**.
   pictogrammes)
 - **Vercel Blob** (`@vercel/blob`) — upload des photos (profil enfant, souvenirs, documents)
 - Server Actions (Next.js) pour toutes les mutations — pas d'API REST séparée
+- **Vitest** (logique métier pure) + **Playwright** (parcours E2E critiques)
 
 ## Démarrage local
 
@@ -43,6 +44,19 @@ npm run dev
 ```
 
 Ouvrir [http://localhost:3000](http://localhost:3000).
+
+### 4. Tests
+
+```bash
+npm run test       # unitaires (Vitest) — logique métier pure, aucune base requise
+npm run test:e2e   # E2E (Playwright) — nécessite le serveur de dev + une base seedée
+```
+
+Les tests E2E utilisent les comptes de démonstration (voir plus bas) sur la base locale ;
+`npm run test:e2e` démarre `next dev` automatiquement s'il ne tourne pas déjà. Si le binaire
+Chromium préinstallé sur votre machine ne correspond pas à la révision attendue par
+`@playwright/test`, lancez `npx playwright install` (ou définissez la variable
+`PLAYWRIGHT_CHROMIUM_PATH` pour pointer vers un Chromium déjà installé).
 
 ## Déploiement (Vercel + Neon)
 
@@ -193,6 +207,10 @@ Le schéma de données prévoit déjà `Document`, `Absence`, `Message`/`Convers
 - Messagerie parent ↔ garderie (le modèle existe, pas d'UI)
 - Notifications push/email (l'en-tête a une vraie boîte de notifications en app, sur
   quelques événements seulement : absence déclarée, compétence observée)
+- Mot de passe oublié en libre-service par email : nécessite de choisir un fournisseur
+  d'envoi d'email (aucun n'est configuré). En attendant : chaque utilisateur peut changer
+  son propre mot de passe depuis « Mon compte », et la direction peut réinitialiser celui
+  d'un parent ou d'un professionnel de sa garderie sans passer par la base de données.
 - Mode hors-connexion avec synchronisation (§59)
 - Statistiques avancées (§61-62), export/transfert de dossier (§65-66)
 - Paiement en ligne, IA de synthèse, tri intelligent des photos (V3, §84)
