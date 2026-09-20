@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PRO } from "@/lib/session";
+import { uploaderFichier } from "@/lib/blob";
 
 async function contexte(enfantId: string) {
   const user = await requireUser(ROLES_PRO);
@@ -263,4 +264,33 @@ export async function enregistrerAcquisitions(enfantId: string, formData: FormDa
   revalidatePath(`/pro/enfants/${enfantId}`);
   revalidatePath(`/parent/enfants/${enfantId}`);
   revalidatePath(`/direction/enfants/${enfantId}`);
+}
+
+export async function modifierPhotoEnfant(enfantId: string, formData: FormData) {
+  const { enfant } = await contexte(enfantId);
+  const fichier = formData.get("photo") as File | null;
+
+  const url = await uploaderFichier(fichier, `enfants/${enfantId}/profil`);
+  if (!url) return;
+
+  await prisma.enfant.update({ where: { id: enfant.id }, data: { photoUrl: url } });
+  revalider(enfantId);
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+export async function ajouterPhotoSouvenir(enfantId: string, formData: FormData) {
+  const { user, enfant } = await contexte(enfantId);
+  const fichier = formData.get("photo") as File | null;
+  const legende = (formData.get("legende") as string) || undefined;
+
+  const url = await uploaderFichier(fichier, `enfants/${enfantId}/souvenirs`);
+  if (!url) return;
+
+  await prisma.photo.create({
+    data: { garderieId: enfant.garderieId, enfantId, url, legende, auteurId: user.id },
+  });
+  revalider(enfantId);
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
 }

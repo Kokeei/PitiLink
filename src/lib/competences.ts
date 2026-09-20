@@ -52,6 +52,35 @@ export async function getAcquisitionsEnfant(enfantId: string, categorieId?: stri
   });
 }
 
+/**
+ * Toutes les catégories actives de la garderie, avec le nombre de
+ * compétences observées pour cet enfant dans chacune (0 si aucune) —
+ * pour l'affichage en badges (cf. §90.5).
+ */
+export async function getBadgesCompetences(enfantId: string, garderieId: string) {
+  const [categories, acquisitions] = await Promise.all([
+    prisma.categorieCompetence.findMany({ where: { garderieId, actif: true }, orderBy: { ordre: "asc" } }),
+    prisma.acquisitionCompetence.findMany({
+      where: { enfantId },
+      include: { competence: { select: { categorieId: true } } },
+      orderBy: { dateObservation: "desc" },
+    }),
+  ]);
+
+  const compteParCategorie = new Map<string, number>();
+  for (const a of acquisitions) {
+    const catId = a.competence.categorieId;
+    compteParCategorie.set(catId, (compteParCategorie.get(catId) ?? 0) + 1);
+  }
+
+  return categories.map((c) => ({
+    id: c.id,
+    nom: c.nom,
+    icone: c.icone,
+    total: compteParCategorie.get(c.id) ?? 0,
+  }));
+}
+
 export async function getResumeParCategorie(enfantId: string) {
   const acquisitions = await prisma.acquisitionCompetence.findMany({
     where: { enfantId },

@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
-import type { StatutEnfant, TypeInfoImportante, LienFamilial } from "@/generated/prisma/enums";
+import { uploaderFichier } from "@/lib/blob";
+import type { StatutEnfant, TypeInfoImportante, LienFamilial, TypeDocument } from "@/generated/prisma/enums";
 
 export async function creerEnfant(formData: FormData) {
   const user = await requireUser(ROLES_DIRECTION);
@@ -185,6 +186,75 @@ export async function supprimerAcquisition(enfantId: string, acquisitionId: stri
   await prisma.acquisitionCompetence.deleteMany({
     where: { id: acquisitionId, garderieId: user.garderieId! },
   });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+export async function modifierPhotoEnfant(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const fichier = formData.get("photo") as File | null;
+
+  const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
+  if (!enfant) return;
+
+  const url = await uploaderFichier(fichier, `enfants/${enfantId}/profil`);
+  if (!url) return;
+
+  await prisma.enfant.update({ where: { id: enfantId }, data: { photoUrl: url } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath("/direction/enfants");
+  revalidatePath(`/pro/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+export async function ajouterPhotoSouvenir(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const fichier = formData.get("photo") as File | null;
+  const legende = (formData.get("legende") as string) || undefined;
+
+  const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
+  if (!enfant) return;
+
+  const url = await uploaderFichier(fichier, `enfants/${enfantId}/souvenirs`);
+  if (!url) return;
+
+  await prisma.photo.create({
+    data: { garderieId: enfant.garderieId, enfantId, url, legende, auteurId: user.id },
+  });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+export async function supprimerPhotoSouvenir(enfantId: string, photoId: string) {
+  const user = await requireUser(ROLES_DIRECTION);
+  await prisma.photo.deleteMany({ where: { id: photoId, enfantId, garderieId: user.garderieId! } });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+export async function ajouterDocument(enfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+  const fichier = formData.get("fichier") as File | null;
+  const nom = formData.get("nom") as string;
+  const type = formData.get("type") as TypeDocument;
+  if (!nom) return;
+
+  const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
+  if (!enfant) return;
+
+  const url = await uploaderFichier(fichier, `enfants/${enfantId}/documents`);
+  if (!url) return;
+
+  await prisma.document.create({
+    data: { garderieId: enfant.garderieId, enfantId, nom, type, url },
+  });
+  revalidatePath(`/direction/enfants/${enfantId}`);
+  revalidatePath(`/parent/enfants/${enfantId}`);
+}
+
+export async function supprimerDocument(enfantId: string, documentId: string) {
+  const user = await requireUser(ROLES_DIRECTION);
+  await prisma.document.deleteMany({ where: { id: documentId, enfantId, garderieId: user.garderieId! } });
   revalidatePath(`/direction/enfants/${enfantId}`);
   revalidatePath(`/parent/enfants/${enfantId}`);
 }

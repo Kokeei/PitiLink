@@ -42,6 +42,7 @@ model Garderie {
   evenements             Evenement[]
   journalEvenements      JournalEvenement[]
   documents              Document[]
+  photos                 Photo[]
   categoriesCompetences  CategorieCompetence[]
   competences            Competence[]
   acquisitionsCompetence AcquisitionCompetence[]
@@ -74,6 +75,7 @@ model User {
   notifications         Notification[]
   acquisitionsObservees AcquisitionCompetence[]   @relation("AuteurAcquisition")
   acquisitionsModifiees AcquisitionCompetence[]   @relation("ModificateurAcquisition")
+  photosPubliees        Photo[]
 
   @@index([garderieId])
   @@map("users")
@@ -139,6 +141,7 @@ model Enfant {
   mesuresCroissance      Croissance[]
   absences               Absence[]
   documents              Document[]
+  photos                 Photo[]
   acquisitionsCompetence AcquisitionCompetence[]
 
   @@index([garderieId])
@@ -438,6 +441,24 @@ model Document {
   @@index([garderieId])
   @@index([enfantId])
   @@map("documents")
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  enfantId   String
+  enfant     Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+
+  url       String
+  legende   String?
+  auteurId  String?
+  auteur    User?    @relation(fields: [auteurId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([garderieId])
+  @@index([enfantId])
+  @@map("photos")
 }
 
 // ---------------------------------------------------------------------------
