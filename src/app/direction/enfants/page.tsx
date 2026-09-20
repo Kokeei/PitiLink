@@ -37,18 +37,46 @@ export default async function EnfantsPage() {
         </form>
       </div>
 
-      <div className="space-y-2">
-        {enfants.map((e) => (
-          <Link key={e.id} href={`/direction/enfants/${e.id}`} className="card flex items-center justify-between">
-            <div>
-              <p className="font-medium">{e.prenom} {e.nom}</p>
-              <p className="text-sm text-stone-500">
-                {calculerAge(e.dateNaissance)} · {e.groupe?.nom ?? "Sans groupe"}
-              </p>
-            </div>
-            <span className="pill bg-stone-100">{e.statut}</span>
-          </Link>
-        ))}
+      <div className="card overflow-x-auto">
+        <table className="w-full min-w-[480px] text-sm">
+          <thead>
+            <tr className="text-left text-stone-500">
+              <th className="pb-2">Nom</th>
+              <th className="pb-2">Prénom</th>
+              <th className="pb-2">Groupe</th>
+              <th className="pb-2">Âge</th>
+              <th className="pb-2">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {enfants.map((e) => (
+              <tr key={e.id} className="border-t border-stone-100">
+                <td className="py-2">
+                  <Link href={`/direction/enfants/${e.id}`} className="font-medium text-orange-700 hover:underline">
+                    {e.nom}
+                  </Link>
+                </td>
+                <td>
+                  <Link href={`/direction/enfants/${e.id}`} className="hover:underline">
+                    {e.prenom}
+                  </Link>
+                </td>
+                <td>{e.groupe?.nom ?? "Sans groupe"}</td>
+                <td>{calculerAge(e.dateNaissance)}</td>
+                <td>
+                  <span className="pill bg-stone-100">{e.statut}</span>
+                </td>
+              </tr>
+            ))}
+            {enfants.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-4 text-center text-stone-500">
+                  Aucun enfant pour le moment.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -3,8 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { calculerAge, formatDate } from "@/lib/format";
 import { getAcquisitionsEnfant } from "@/lib/competences";
+import { OPTIONS_LIEN } from "@/lib/famille";
 import {
   modifierStatutEnfant,
+  modifierAdresse,
+  ajouterParent,
+  modifierParent,
+  definirContactUrgencePrincipal,
+  retirerParent,
   ajouterInfoImportante,
   supprimerInfoImportante,
   corrigerAcquisition,
@@ -61,16 +67,95 @@ export default async function FicheEnfantDirectionPage({ params }: { params: Pro
         </form>
       </div>
 
-      <div className="card space-y-2">
-        <p className="font-semibold">Famille</p>
+      <div className="card space-y-3">
+        <p className="font-semibold">📍 Adresse</p>
+        <form action={modifierAdresse.bind(null, id)} className="flex gap-2">
+          <input
+            name="adresse"
+            defaultValue={enfant.adresse ?? ""}
+            placeholder="Adresse de la famille"
+            className="input-large flex-1"
+          />
+          <button className="btn-secondary">Enregistrer</button>
+        </form>
+      </div>
+
+      <div className="card space-y-3">
+        <p className="font-semibold">👪 Parents</p>
         {enfant.parents.length === 0 && <p className="text-sm text-stone-500">Aucun parent lié.</p>}
-        <ul className="text-sm">
+
+        <div className="space-y-3">
           {enfant.parents.map((p) => (
-            <li key={p.id}>
-              {p.user.prenom} {p.user.nom} ({p.lien}) — {p.user.email}
-            </li>
+            <div key={p.id} className="rounded-xl border border-stone-200 p-3 space-y-2">
+              <form action={modifierParent.bind(null, id, p.id)} className="grid grid-cols-2 gap-2">
+                <input name="prenom" defaultValue={p.user.prenom} placeholder="Prénom" className="input-large text-sm" required />
+                <input name="nom" defaultValue={p.user.nom} placeholder="Nom" className="input-large text-sm" required />
+                <input
+                  name="telephone"
+                  defaultValue={p.user.telephone ?? ""}
+                  placeholder="Téléphone"
+                  className="input-large text-sm"
+                />
+                <input
+                  name="email"
+                  type="email"
+                  defaultValue={p.user.email}
+                  placeholder="Email"
+                  className="input-large text-sm"
+                  required
+                />
+                <select name="lien" defaultValue={p.lien} className="input-large text-sm col-span-2">
+                  {OPTIONS_LIEN.map((o) => (
+                    <option key={o.valeur} value={o.valeur}>
+                      {o.libelle}
+                    </option>
+                  ))}
+                </select>
+                <button className="btn-secondary col-span-2 text-sm">Enregistrer</button>
+              </form>
+
+              <div className="flex items-center justify-between border-t border-stone-100 pt-2">
+                {p.estContactUrgence ? (
+                  <span className="pill bg-orange-100 text-orange-700">★ Contact d&apos;urgence principal</span>
+                ) : (
+                  <form action={definirContactUrgencePrincipal.bind(null, id, p.id)}>
+                    <button className="text-sm text-orange-600">Définir comme contact d&apos;urgence principal</button>
+                  </form>
+                )}
+                <form action={retirerParent.bind(null, id, p.id)}>
+                  <button className="text-xs text-red-600">Retirer</button>
+                </form>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
+
+        <form action={ajouterParent.bind(null, id)} className="grid grid-cols-2 gap-2 border-t border-stone-100 pt-3">
+          <p className="col-span-2 text-sm text-stone-500">Ajouter un parent</p>
+          <input name="prenom" placeholder="Prénom" className="input-large text-sm" required />
+          <input name="nom" placeholder="Nom" className="input-large text-sm" required />
+          <input name="telephone" placeholder="Téléphone" className="input-large text-sm" />
+          <select name="lien" className="input-large text-sm" defaultValue="AUTRE">
+            {OPTIONS_LIEN.map((o) => (
+              <option key={o.valeur} value={o.valeur}>
+                {o.libelle}
+              </option>
+            ))}
+          </select>
+          <input name="email" type="email" placeholder="Email" className="input-large text-sm col-span-2" required />
+          <input
+            name="motDePasse"
+            type="password"
+            placeholder="Mot de passe initial"
+            className="input-large text-sm col-span-2"
+            required
+            minLength={8}
+          />
+          <label className="col-span-2 flex items-center gap-2 text-sm">
+            <input type="checkbox" name="estContactUrgence" className="h-5 w-5" /> Contact d&apos;urgence principal
+          </label>
+          <button className="btn-primary col-span-2">Ajouter ce parent</button>
+        </form>
       </div>
 
       <div className="card space-y-2">
