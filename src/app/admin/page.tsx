@@ -2,6 +2,7 @@ import { commencerDelegation } from "./actions";
 import { prisma } from "@/lib/prisma";
 import { LIBELLES_ROLE, ROLE_PILL } from "@/lib/badges";
 import { ROLES_DELEGABLES } from "@/lib/delegation";
+import type { Role } from "@/generated/prisma/enums";
 
 const FILTRES = [
   { value: "", label: "Tous" },
@@ -15,11 +16,11 @@ export default async function AdminPage({
 }) {
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
-  const role = params.role && ROLES_DELEGABLES.includes(params.role as never) ? params.role : "";
+  const role = params.role && ROLES_DELEGABLES.includes(params.role as Role) ? (params.role as Role) : "";
 
   const users = await prisma.user.findMany({
     where: {
-      role: role ? (role as never) : { in: ROLES_DELEGABLES },
+      role: role || { in: ROLES_DELEGABLES },
       ...(q
         ? {
             OR: [
