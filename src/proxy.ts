@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import authConfig from "@/auth.config";
 import { Role } from "@/generated/prisma/enums";
+import { DELEGATION_COOKIE } from "@/lib/delegation-constants";
 
 const { auth } = NextAuth(authConfig);
 
@@ -35,6 +36,7 @@ export default auth((req) => {
   }
 
   const espace = ESPACE_PAR_ROLE[user.role];
+  const delegationActive = user.role === "ADMIN_PLATEFORME" && req.cookies.has(DELEGATION_COOKIE);
 
   if (isPublic || nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL(espace, nextUrl.origin));
@@ -44,7 +46,7 @@ export default auth((req) => {
   // accessible à tout utilisateur connecté quel que soit son rôle.
   const isCompte = nextUrl.pathname.startsWith("/compte");
 
-  if (!isCompte && !nextUrl.pathname.startsWith(espace)) {
+  if (!isCompte && !delegationActive && !nextUrl.pathname.startsWith(espace)) {
     return NextResponse.redirect(new URL(espace, nextUrl.origin));
   }
 
