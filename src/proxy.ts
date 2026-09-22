@@ -14,14 +14,13 @@ const ESPACE_PAR_ROLE: Record<Role, string> = {
   ADMIN_PLATEFORME: "/admin",
 };
 
+const ESPACES_DELEGATION = ["/parent", "/pro", "/direction", "/compte", "/admin"];
 const PUBLIC_PATHS = ["/connexion"];
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p));
   const isApiAuth = nextUrl.pathname.startsWith("/api/auth");
-  // /api/setup gere sa propre protection (SETUP_TOKEN) : provisionnement
-  // initial d'une base vide, avant qu'aucun compte n'existe encore.
   const isApiSetup = nextUrl.pathname.startsWith("/api/setup");
 
   if (isApiAuth || isApiSetup) return NextResponse.next();
@@ -36,17 +35,25 @@ export default auth((req) => {
   }
 
   const espace = ESPACE_PAR_ROLE[user.role];
-  const delegationActive = user.role === "ADMIN_PLATEFORME" && req.cookies.has(DELEGATION_COOKIE);
+  const delegationActive = user.role === "ADMIN_PLATEFORME" &&
+    Boolean(req.cookies.get(DELEGATION_COOKIE)?.value);
 
   if (isPublic || nextUrl.pathname === "/") {
+    if (delegationActive) {
+      return NextResponse.next();
+    }
     return NextResponse.redirect(new URL(espace, nextUrl.origin));
   }
 
-  // /compte est un espace transversal (changer son mot de passe...),
-  // accessible à tout utilisateur connecté quel que soit son rôle.
   const isCompte = nextUrl.pathname.startsWith("/compte");
 
-  if (!isCompte && !delegationActive && !nextUrl.pathname.startsWith(espace)) {
+  // Pendant une délégation, les layouts serveur vérifient la délégation en base
+  // et calculent l'utilisateur effectif. Le proxy reste volontairement Edge-safe.
+  if (delegationActive && ESPACES_DELEGATION.some((p) => nextUrl.pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  if (!isCompte && !nextUrl.pathname.startsWith(espace)) {
     return NextResponse.redirect(new URL(espace, nextUrl.origin));
   }
 
