@@ -97,6 +97,21 @@ model User {
   @@map("users")
 }
 
+model Delegation {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      User     @relation("DelegationsAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  cibleUserId String
+  cible      User     @relation("DelegationsCible", fields: [cibleUserId], references: [id], onDelete: Cascade)
+  creeeLe    DateTime @default(now())
+  termineeLe DateTime?
+  expireLe   DateTime?
+
+  @@index([adminId])
+  @@index([cibleUserId])
+  @@map("delegations")
+}
+
 // ---------------------------------------------------------------------------
 // Structure de la garderie
 // ---------------------------------------------------------------------------
