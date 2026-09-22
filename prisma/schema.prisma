@@ -92,6 +92,8 @@ model User {
   acquisitionsObservees AcquisitionCompetence[]   @relation("AuteurAcquisition")
   acquisitionsModifiees AcquisitionCompetence[]   @relation("ModificateurAcquisition")
   photosPubliees        Photo[]
+  delegationsInitiees   Delegation[] @relation("DelegationsAdmin")
+  delegationsCibles     Delegation[] @relation("DelegationsCible")
 
   @@index([garderieId])
   @@map("users")
