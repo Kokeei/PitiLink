@@ -1,10 +1,15 @@
-import { signOut } from "@/auth";
+import { signOut, auth } from "@/auth";
+import { nettoyerDelegationAvantDeconnexion } from "@/app/admin/actions";
 
 export function DeconnexionButton() {
   return (
     <form
       action={async () => {
         "use server";
+        const session = await auth();
+        if (session?.user?.role === "ADMIN_PLATEFORME") {
+          await nettoyerDelegationAvantDeconnexion();
+        }
         await signOut({ redirectTo: "/connexion" });
       }}
     >
