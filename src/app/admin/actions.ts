@@ -66,9 +66,8 @@ export async function commencerDelegation(cibleUserId: string) {
   redirect(espacePourRole(cible.role));
 }
 
-export async function terminerDelegation() {
-  const admin = await requireBaseAdmin();
-  const active = await getActiveDelegation(admin.id);
+async function fermerDelegation(adminId: string) {
+  const active = await getActiveDelegation(adminId);
 
   if (active) {
     await prisma.delegation.update({
@@ -79,6 +78,15 @@ export async function terminerDelegation() {
 
   const cookieStore = await cookies();
   cookieStore.delete(DELEGATION_COOKIE);
+}
 
+export async function nettoyerDelegationAvantDeconnexion() {
+  const admin = await requireBaseAdmin();
+  await fermerDelegation(admin.id);
+}
+
+export async function terminerDelegation() {
+  const admin = await requireBaseAdmin();
+  await fermerDelegation(admin.id);
   redirect("/admin");
 }
