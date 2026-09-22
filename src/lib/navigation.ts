@@ -25,3 +25,7 @@ export const LIENS_PARENT: LienNav[] = [
   { href: "/parent", label: "Mes enfants", icone: "👶" },
   { href: "/parent/absences", label: "Absences", icone: "🏖️" },
 ];
+
+export const LIENS_ADMIN: LienNav[] = [
+  { href: "/admin", label: "Délégation", icone: "🛡️" },
+];
