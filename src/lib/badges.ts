@@ -15,7 +15,6 @@ export const ROLE_PILL: Record<string, string> = {
   DIRECTION: "bg-orange-100 text-orange-700",
   PARENT: "bg-emerald-100 text-emerald-700",
   ADMIN_PLATEFORME: "bg-stone-800 text-white",
-  ADMIN_PLATEFORME: "bg-amber-100 text-amber-800",
 };
 
 export const STATUTS_ENFANT_PILL: Record<string, string> = {
