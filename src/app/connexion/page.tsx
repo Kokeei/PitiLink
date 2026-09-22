@@ -5,6 +5,7 @@ import { connexionAction } from "./actions";
 
 const COMPTES_DEMO = [
   { role: "Administrateur plateforme", email: "admin.demo@pitilink.local" },
+  { role: "Administrateur plateforme", email: "admin.demo@pitilink.local" },
   { role: "Direction", email: "direction.demo@pitilink.local" },
   { role: "Responsable", email: "responsable.demo@pitilink.local" },
   { role: "Professionnel", email: "ana.demo@pitilink.local" },
