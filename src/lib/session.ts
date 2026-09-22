@@ -3,28 +3,38 @@ import { auth } from "@/auth";
 import { Role } from "@/generated/prisma/enums";
 import { getActiveDelegation } from "@/lib/delegation";
 
-export async function requireUser(allowedRoles?: Role[]) {
+export type SessionUser = {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role: Role;
+  garderieId?: string | null;
+};
+
+export async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/connexion");
-  }
+  if (!session?.user) return null;
 
-  let user = session.user;
+  // L'admin reste l'identité authentifiée. La délégation ne change que
+  // l'identité effective utilisée par les écrans métier et leurs actions.
+  if (session.user.role !== "ADMIN_PLATEFORME") return session.user;
 
-  if (session.user.role === "ADMIN_PLATEFORME") {
-    const delegation = await getActiveDelegation(session.user.id);
+  const delegation = await getActiveDelegation(session.user.id);
+  if (!delegation) return session.user;
 
-    if (delegation) {
-      user = {
-        ...session.user,
-        id: delegation.cible.id,
-        name: `${delegation.cible.prenom} ${delegation.cible.nom}`,
-        email: delegation.cible.email,
-        role: delegation.cible.role,
-        garderieId: delegation.cible.garderieId,
-      };
-    }
-  }
+  return {
+    id: delegation.cible.id,
+    email: delegation.cible.email,
+    name: `${delegation.cible.prenom} ${delegation.cible.nom}`,
+    role: delegation.cible.role,
+    garderieId: delegation.cible.garderieId,
+  };
+}
+
+export async function requireUser(allowedRoles?: Role[]) {
+  const user = await getCurrentUser();
+
+  if (!user) redirect("/connexion");
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     redirect("/connexion");
