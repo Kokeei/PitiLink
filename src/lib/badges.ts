@@ -14,6 +14,7 @@ export const ROLE_PILL: Record<string, string> = {
   RESPONSABLE: "bg-violet-100 text-violet-700",
   DIRECTION: "bg-orange-100 text-orange-700",
   PARENT: "bg-emerald-100 text-emerald-700",
+  ADMIN_PLATEFORME: "bg-amber-100 text-amber-800",
 };
 
 export const STATUTS_ENFANT_PILL: Record<string, string> = {
