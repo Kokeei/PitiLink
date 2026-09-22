@@ -118,18 +118,6 @@ export async function seedDatabase(prisma: PrismaClient) {
     }),
   ]);
 
-  // Compte administrateur de plateforme pour les démonstrations et recettes.
-  // En production, remplacer ces identifiants de démonstration par un compte dédié.
-  await prisma.user.create({
-    data: {
-      email: "admin.demo@pitilink.local",
-      passwordHash: hash,
-      prenom: "Admin",
-      nom: "PitiLink",
-      role: "ADMIN_PLATEFORME",
-      garderieId: null,
-    },
-  });
 
   const kiivai = await prisma.enfant.create({
     data: {
@@ -677,7 +665,6 @@ export async function seedDatabase(prisma: PrismaClient) {
       responsable: "responsable.demo@pitilink.local",
       professionnels: ["ana.demo@pitilink.local", "julie.demo@pitilink.local"],
       parents: ["parent.demo@pitilink.local", "papa.demo@pitilink.local"],
-      admin: "admin.demo@pitilink.local",
     },
   };
 }
