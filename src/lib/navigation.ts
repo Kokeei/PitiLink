@@ -1,5 +1,9 @@
 export type LienNav = { href: string; label: string; icone: string };
 
+export const LIENS_ADMIN: LienNav[] = [
+  { href: "/admin", label: "Délégation", icone: "🛡️" },
+];
+
 export const LIENS_DIRECTION: LienNav[] = [
   { href: "/direction", label: "Tableau de bord", icone: "📊" },
   { href: "/direction/enfants", label: "Enfants", icone: "👶" },

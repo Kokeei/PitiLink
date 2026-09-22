@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { seedDatabase } from "@/lib/seedDatabase";
+import { seedDatabase, MOT_DE_PASSE_DEMO } from "@/lib/seedDatabase";
 
 /**
  * Endpoint de provisionnement à usage unique : applique les données de
@@ -27,7 +28,34 @@ export async function GET(request: NextRequest) {
 
   const existant = await prisma.garderie.count();
   if (existant > 0) {
-    return NextResponse.json({ statut: "deja_initialise", message: "La base contient déjà des données." });
+    const adminExistant = await prisma.user.findUnique({
+      where: { email: "admin.demo@pitilink.local" },
+      select: { id: true },
+    });
+
+    if (adminExistant) {
+      return NextResponse.json({ statut: "deja_initialise", message: "La base contient déjà des données et le compte administrateur existe." });
+    }
+
+    const passwordHash = await bcrypt.hash(MOT_DE_PASSE_DEMO, 10);
+    const admin = await prisma.user.create({
+      data: {
+        email: "admin.demo@pitilink.local",
+        passwordHash,
+        prenom: "Admin",
+        nom: "PitiLink",
+        role: "ADMIN_PLATEFORME",
+        garderieId: null,
+      },
+      select: { email: true },
+    });
+
+    return NextResponse.json({
+      statut: "admin_cree",
+      message: "Compte administrateur plateforme créé.",
+      compte: admin.email,
+      motDePasse: MOT_DE_PASSE_DEMO,
+    });
   }
 
   const resultat = await seedDatabase(prisma);

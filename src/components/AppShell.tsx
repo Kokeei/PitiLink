@@ -5,6 +5,7 @@ import { Sidebar, NavMobile } from "@/components/Sidebar";
 import { marquerNotificationsLues } from "@/app/actions";
 import { formatDate } from "@/lib/format";
 import { LIBELLES_ROLE } from "@/lib/badges";
+import { BandeauDelegation } from "@/components/BandeauDelegation";
 
 type Item = { href: string; label: string; icone: string };
 
@@ -39,7 +40,9 @@ export async function AppShell({
   ]);
 
   return (
-    <div className="flex min-h-screen">
+    <>
+      <BandeauDelegation />
+      <div className="flex min-h-screen">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-stone-200 bg-white p-4 md:flex">
         <Link href="/" className="mb-6 px-2">
           <p className="text-xl font-bold text-orange-600">🏠 PitiLink</p>
@@ -124,6 +127,7 @@ export async function AppShell({
 
         <main className="flex-1 bg-stone-50 px-4 py-4">{children}</main>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

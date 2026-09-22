@@ -92,9 +92,26 @@ model User {
   acquisitionsObservees AcquisitionCompetence[]   @relation("AuteurAcquisition")
   acquisitionsModifiees AcquisitionCompetence[]   @relation("ModificateurAcquisition")
   photosPubliees        Photo[]
+  delegationsInitiees   Delegation[] @relation("DelegationsAdmin")
+  delegationsCibles     Delegation[] @relation("DelegationsCible")
 
   @@index([garderieId])
   @@map("users")
+}
+
+model Delegation {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      User     @relation("DelegationsAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  cibleUserId String
+  cible      User     @relation("DelegationsCible", fields: [cibleUserId], references: [id], onDelete: Cascade)
+  creeeLe    DateTime @default(now())
+  termineeLe DateTime?
+  expireLe   DateTime?
+
+  @@index([adminId])
+  @@index([cibleUserId])
+  @@map("delegations")
 }
 
 // ---------------------------------------------------------------------------
@@ -847,4 +864,24 @@ model AcquisitionCompetence {
   @@index([enfantId, dateObservation])
   @@index([competenceId])
   @@map("acquisitions_competences")
+}
+
+
+// Délégation temporaire d'un administrateur de plateforme vers un compte métier.
+// L'identité de l'administrateur reste portée par adminId : on ne modifie jamais le rôle de la cible.
+model Delegation {
+  id          String   @id @default(cuid())
+  adminId     String
+  cibleUserId String
+  creeeLe     DateTime @default(now())
+  termineeLe  DateTime?
+  expireLe    DateTime?
+
+  admin  User @relation("DelegationsAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  cible  User @relation("DelegationsCible", fields: [cibleUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([cibleUserId])
+  @@index([adminId, termineeLe])
+  @@map("delegations")
 }
