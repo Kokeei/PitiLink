@@ -865,23 +865,3 @@ model AcquisitionCompetence {
   @@index([competenceId])
   @@map("acquisitions_competences")
 }
-
-
-// Délégation temporaire d'un administrateur de plateforme vers un compte métier.
-// L'identité de l'administrateur reste portée par adminId : on ne modifie jamais le rôle de la cible.
-model Delegation {
-  id          String   @id @default(cuid())
-  adminId     String
-  cibleUserId String
-  creeeLe     DateTime @default(now())
-  termineeLe  DateTime?
-  expireLe    DateTime?
-
-  admin  User @relation("DelegationsAdmin", fields: [adminId], references: [id], onDelete: Cascade)
-  cible  User @relation("DelegationsCible", fields: [cibleUserId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-  @@index([cibleUserId])
-  @@index([adminId, termineeLe])
-  @@map("delegations")
-}
