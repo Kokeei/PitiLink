@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
+import { DELEGATION_COOKIE } from "@/lib/delegation-constants";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@/generated/prisma/enums";
 
-export const DELEGATION_COOKIE = "pitilink-delegation";
 export const DUREE_DELEGATION_MS = 8 * 60 * 60 * 1000;
 
 export const ROLES_DELEGABLES: Role[] = [
