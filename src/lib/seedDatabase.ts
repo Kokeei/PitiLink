@@ -33,6 +33,17 @@ export async function seedDatabase(prisma: PrismaClient) {
     },
   });
 
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin.demo@pitilink.local",
+      passwordHash: hash,
+      prenom: "Admin",
+      nom: "PitiLink",
+      role: "ADMIN_PLATEFORME",
+      garderieId: null,
+    },
+  });
+
   const groupeMoyens = await prisma.groupe.create({
     data: {
       garderieId: garderie.id,
@@ -648,6 +659,7 @@ export async function seedDatabase(prisma: PrismaClient) {
   return {
     motDePasse: MOT_DE_PASSE_DEMO,
     comptes: {
+      admin: admin.email,
       direction: "direction.demo@pitilink.local",
       responsable: "responsable.demo@pitilink.local",
       professionnels: ["ana.demo@pitilink.local", "julie.demo@pitilink.local"],
