@@ -6,6 +6,7 @@ import { marquerNotificationsLues } from "@/app/actions";
 import { formatDate } from "@/lib/format";
 import { LIBELLES_ROLE } from "@/lib/badges";
 import { BandeauDelegation } from "@/components/BandeauDelegation";
+import { BandeauDelegation } from "@/components/BandeauDelegation";
 
 type Item = { href: string; label: string; icone: string };
 
