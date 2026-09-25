@@ -43,7 +43,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
   lundiSuivant.setDate(lundiSuivant.getDate() + 7);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
 
-  const [semaine, typesRepas, groupes, enfants, aliments, allergenes, semainesRecentes] = await Promise.all([
+  const [semaine, typesRepas, groupes, enfants, aliments, tousAliments, allergenes, semainesRecentes] = await Promise.all([
     prisma.semaineMenu.findUnique({
       where: { garderieId_dateDebut: { garderieId, dateDebut: lundi } },
       include: {
@@ -68,6 +68,14 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
       where: { garderieId, actif: true },
       include: { allergenes: { include: { allergene: true } } },
       orderBy: { nom: "asc" },
+    }),
+    // Non filtré par actif : un aliment désactivé peut toujours être
+    // référencé par une entrée de menu existante — la détection de conflit
+    // d'allergie doit continuer à le connaître, sinon un aliment retiré du
+    // catalogue "disparaît" silencieusement des alertes.
+    prisma.aliment.findMany({
+      where: { garderieId },
+      include: { allergenes: { include: { allergene: true } } },
     }),
     prisma.allergene.findMany({ where: { garderieId }, orderBy: { nom: "asc" } }),
     prisma.semaineMenu.findMany({ where: { garderieId }, orderBy: { dateDebut: "desc" }, take: 8 }),
@@ -195,7 +203,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
     })),
   }));
 
-  const allergenesParAliment = new Map(aliments.map((a) => [a.id, a.allergenes.map((al) => al.allergene)]));
+  const allergenesParAliment = new Map(tousAliments.map((a) => [a.id, a.allergenes.map((al) => al.allergene)]));
 
   function trouverEntree(jour: number, typeRepasId: string, portee: PorteeMenu, groupeId: string | null, enfantId: string | null) {
     return semaine!.entrees.find(
