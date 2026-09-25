@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { DELEGATION_COOKIE } from "@/lib/delegation-constants";
 import {
-  DELEGATION_COOKIE,
   DUREE_DELEGATION_MS,
   ROLES_DELEGABLES,
   espacePourRole,

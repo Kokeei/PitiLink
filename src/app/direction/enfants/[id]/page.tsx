@@ -28,6 +28,7 @@ import { CarteParents } from "@/components/fiche/CarteParents";
 import { Tabs } from "@/components/fiche/Tabs";
 import {
   modifierFicheEnfant,
+  modifierParent,
   modifierPhotoEnfant,
   modifierAccueil,
   modifierMedecin,
@@ -258,7 +259,7 @@ export default async function FicheEnfantDirectionPage({
                       <p className="text-sm font-semibold text-stone-600">Gérer les responsables</p>
                       {enfant.parents.map((p) => (
                         <div key={p.id} className="space-y-2 rounded-xl border border-stone-200 p-3 text-sm">
-                          <form action={modifierFicheEnfant.bind(null, id)} className="grid grid-cols-2 gap-2">
+                          <form action={modifierParent.bind(null, id, p.id)} className="grid grid-cols-2 gap-2">
                             <input name={`parent_${p.id}_prenom`} defaultValue={p.user.prenom} placeholder="Prénom" className="input-large text-sm" required />
                             <input name={`parent_${p.id}_nom`} defaultValue={p.user.nom} placeholder="Nom" className="input-large text-sm" required />
                             <input name={`parent_${p.id}_telephone`} defaultValue={p.user.telephone ?? ""} placeholder="Téléphone" className="input-large text-sm" />

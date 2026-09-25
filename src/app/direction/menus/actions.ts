@@ -44,6 +44,18 @@ export async function upsertMenuEntree(
   if (semaine.statut === "ARCHIVE") return;
   if (semaine.statut === "PUBLIE" && formData.get("confirmerModification") !== "on") return;
 
+  // La portée détermine quelle référence doit appartenir à la garderie de
+  // l'appelant : semaineId est déjà vérifié ci-dessus, mais typeRepasId,
+  // groupeId et enfantId sont reçus en paramètre de l'action et doivent
+  // être revérifiés ici pour empêcher qu'une entrée de menu soit créée
+  // avec une référence appartenant à une autre garderie.
+  const [typeRepasValide, groupeValide, enfantValide] = await Promise.all([
+    prisma.typeRepas.findFirst({ where: { id: typeRepasId, garderieId: user.garderieId! } }),
+    groupeId ? prisma.groupe.findFirst({ where: { id: groupeId, garderieId: user.garderieId! } }) : Promise.resolve(true),
+    enfantId ? prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } }) : Promise.resolve(true),
+  ]);
+  if (!typeRepasValide || !groupeValide || !enfantValide) return;
+
   const alimentIds = formData.getAll("alimentIds") as string[];
   const note = (formData.get("note") as string) || null;
   if (alimentIds.length === 0) return;

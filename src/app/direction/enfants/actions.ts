@@ -50,6 +50,10 @@ export async function creerEnfant(formData: FormData) {
   const urgenceLien = (formData.get("urgenceLien") as string) || "Autre";
 
   const enfantId = await prisma.$transaction(async (tx) => {
+    // groupeId vient du formulaire : à revalider côté serveur pour ne
+    // jamais rattacher l'enfant au groupe d'une autre garderie.
+    const groupeValide = groupeId ? await tx.groupe.findFirst({ where: { id: groupeId, garderieId } }) : null;
+
     const enfant = await tx.enfant.create({
       data: {
         garderieId,
@@ -57,7 +61,7 @@ export async function creerEnfant(formData: FormData) {
         nom,
         dateNaissance: new Date(dateNaissance),
         sexe,
-        groupeId,
+        groupeId: groupeValide ? groupeId : undefined,
         dateInscription: new Date(),
         dateDebutAccueil: dateDebutAccueil ? new Date(dateDebutAccueil) : undefined,
         joursPresence,
@@ -164,20 +168,35 @@ export async function modifierFicheEnfant(enfantId: string, formData: FormData) 
     });
   }
 
-  for (const p of enfant.parents) {
-    const prenom = formData.get(`parent_${p.id}_prenom`) as string | null;
-    const nom = formData.get(`parent_${p.id}_nom`) as string | null;
-    const email = formData.get(`parent_${p.id}_email`) as string | null;
-    const telephone = (formData.get(`parent_${p.id}_telephone`) as string) || null;
-    const lien = formData.get(`parent_${p.id}_lien`) as LienFamilial | null;
-    if (!prenom || !nom || !email || !lien) continue;
-
-    await prisma.user.update({ where: { id: p.userId }, data: { prenom, nom, email, telephone } });
-    await prisma.parentEnfant.update({ where: { id: p.id }, data: { lien } });
-  }
-
   revalidatePath(`/direction/enfants/${enfantId}`);
   revalidatePath("/direction/enfants");
+}
+
+/**
+ * Formulaire dédié à UN responsable (carte "Gérer les responsables") : action
+ * séparée de modifierFicheEnfant pour que sa soumission n'envoie jamais les
+ * champs de l'enfant (statut, groupe, autorisation photos...) — ces champs
+ * sont non-nullables en base et leur absence ferait échouer la mise à jour.
+ */
+export async function modifierParent(enfantId: string, parentEnfantId: string, formData: FormData) {
+  const user = await requireUser(ROLES_DIRECTION);
+
+  const lienParent = await prisma.parentEnfant.findFirst({
+    where: { id: parentEnfantId, enfantId, enfant: { garderieId: user.garderieId! } },
+  });
+  if (!lienParent) return;
+
+  const prenom = formData.get(`parent_${parentEnfantId}_prenom`) as string | null;
+  const nom = formData.get(`parent_${parentEnfantId}_nom`) as string | null;
+  const email = formData.get(`parent_${parentEnfantId}_email`) as string | null;
+  const telephone = (formData.get(`parent_${parentEnfantId}_telephone`) as string) || null;
+  const lien = formData.get(`parent_${parentEnfantId}_lien`) as LienFamilial | null;
+  if (!prenom || !nom || !email || !lien) return;
+
+  await prisma.user.update({ where: { id: lienParent.userId }, data: { prenom, nom, email, telephone } });
+  await prisma.parentEnfant.update({ where: { id: parentEnfantId }, data: { lien } });
+
+  revalidatePath(`/direction/enfants/${enfantId}`);
 }
 
 export async function ajouterParent(enfantId: string, formData: FormData) {
