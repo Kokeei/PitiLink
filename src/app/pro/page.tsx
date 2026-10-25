@@ -93,19 +93,22 @@ function BoutonPointage({
     );
   }
 
-  const type = etat.etape;
-  return (
-    <form action={marquerPresence.bind(null, enfantId, type)} className="relative z-10 shrink-0">
-      {type === "arrivee" ? (
+  if (etat.etape === "arrivee") {
+    return (
+      <form action={marquerPresence.bind(null, enfantId, "arrivee")} className="relative z-10 shrink-0">
         <button className="btn-primary min-w-[132px]" aria-label={`Pointer l'arrivée de ${prenom}`}>
           🏠 Arrivée
         </button>
-      ) : (
-        <button className="btn-secondary min-w-[132px] flex-col gap-0" aria-label={`Pointer le départ de ${prenom}`}>
-          <span>👋 Départ</span>
-          <span className="text-xs font-normal text-stone-500">arrivé·e {formatHeure(etat.heureArrivee)}</span>
-        </button>
-      )}
+      </form>
+    );
+  }
+
+  return (
+    <form action={marquerPresence.bind(null, enfantId, "depart")} className="relative z-10 shrink-0">
+      <button className="btn-secondary min-w-[132px] flex-col gap-0" aria-label={`Pointer le départ de ${prenom}`}>
+        <span>👋 Départ</span>
+        <span className="text-xs font-normal text-stone-500">arrivé·e {formatHeure(etat.heureArrivee)}</span>
+      </button>
     </form>
   );
 }
