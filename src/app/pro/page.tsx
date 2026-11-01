@@ -5,6 +5,11 @@ import { calculerAge, formatHeure } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT } from "@/lib/journal";
 import { etatPointage } from "@/lib/pointage";
 import { marquerPresence } from "./enfants/[id]/actions";
+import { BoutonEnvoi } from "@/components/pointage/BoutonEnvoi";
+
+// Hauteur commune des boutons de pointage : le bouton « Départ » porte un sous-libellé
+// (heure d'arrivée) et serait sinon plus haut que « Arrivée » ; la liste reste alignée.
+const HAUTEUR_BOUTON = "min-h-20";
 
 export default async function VueAujourdhuiPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await requireUser(ROLES_PRO);
@@ -82,7 +87,20 @@ function BoutonPointage({
   const etat = etatPointage(presence);
 
   if (etat.etape === "absent") {
-    return <span className="pill relative z-10 shrink-0 bg-stone-100 text-stone-500">Absent</span>;
+    // Absence déclarée mais l'enfant arrive quand même : pointage possible sans ouvrir la fiche.
+    return (
+      <div className="relative z-10 flex shrink-0 flex-col items-end gap-1">
+        <span className="pill bg-stone-100 text-stone-500">Absent</span>
+        <form action={marquerPresence.bind(null, enfantId, "arrivee")}>
+          <BoutonEnvoi
+            className="min-h-11 px-2 text-sm font-medium text-orange-700 underline underline-offset-2 disabled:opacity-40"
+            ariaLabel={`${prenom} est là finalement : pointer son arrivée`}
+          >
+            Il est là finalement
+          </BoutonEnvoi>
+        </form>
+      </div>
+    );
   }
 
   if (etat.etape === "parti") {
@@ -96,19 +114,22 @@ function BoutonPointage({
   if (etat.etape === "arrivee") {
     return (
       <form action={marquerPresence.bind(null, enfantId, "arrivee")} className="relative z-10 shrink-0">
-        <button className="btn-primary min-w-[132px]" aria-label={`Pointer l'arrivée de ${prenom}`}>
+        <BoutonEnvoi className={`btn-primary min-w-[132px] ${HAUTEUR_BOUTON}`} ariaLabel={`Pointer l'arrivée de ${prenom}`}>
           🏠 Arrivée
-        </button>
+        </BoutonEnvoi>
       </form>
     );
   }
 
   return (
     <form action={marquerPresence.bind(null, enfantId, "depart")} className="relative z-10 shrink-0">
-      <button className="btn-secondary min-w-[132px] flex-col gap-0" aria-label={`Pointer le départ de ${prenom}`}>
+      <BoutonEnvoi
+        className={`btn-secondary min-w-[132px] ${HAUTEUR_BOUTON} flex-col gap-0`}
+        ariaLabel={`Pointer le départ de ${prenom}`}
+      >
         <span>👋 Départ</span>
-        <span className="text-xs font-normal text-stone-500">arrivé·e {formatHeure(etat.heureArrivee)}</span>
-      </button>
+        <span className="text-sm font-normal text-stone-600">arrivé·e {formatHeure(etat.heureArrivee)}</span>
+      </BoutonEnvoi>
     </form>
   );
 }
