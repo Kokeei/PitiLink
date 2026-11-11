@@ -7,6 +7,7 @@ export const LIENS_ADMIN: LienNav[] = [
 export const LIENS_DIRECTION: LienNav[] = [
   { href: "/direction", label: "Tableau de bord", icone: "📊" },
   { href: "/direction/enfants", label: "Enfants", icone: "👶" },
+  { href: "/direction/messages", label: "Messages", icone: "💬" },
   { href: "/direction/absences", label: "Absences", icone: "🏖️" },
   { href: "/direction/groupes", label: "Groupes", icone: "👥" },
   { href: "/direction/professionnels", label: "Professionnels", icone: "🧑‍🏫" },
@@ -17,10 +18,12 @@ export const LIENS_DIRECTION: LienNav[] = [
 export const LIENS_PRO: LienNav[] = [
   { href: "/pro", label: "Aujourd'hui", icone: "🏠" },
   { href: "/pro/groupe", label: "Groupe", icone: "👥" },
+  { href: "/pro/messages", label: "Messages", icone: "💬" },
   { href: "/pro/menus", label: "Menus", icone: "🍽️" },
 ];
 
 export const LIENS_PARENT: LienNav[] = [
   { href: "/parent", label: "Mes enfants", icone: "👶" },
+  { href: "/parent/messages", label: "Messages", icone: "💬" },
   { href: "/parent/absences", label: "Absences", icone: "🏖️" },
 ];

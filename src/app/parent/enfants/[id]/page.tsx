@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PARENT } from "@/lib/session";
@@ -101,6 +102,11 @@ export default async function FicheEnfantParentPage({
         enfant={enfant}
         referente={referente ? `${referente.prenom} ${referente.nom}` : undefined}
         petitMot={estAujourdhui ? petitMot?.commentaire : undefined}
+        actions={
+          <Link href={`/parent/messages/${id}`} className="btn-secondary text-sm">
+            💬 Messages
+          </Link>
+        }
       />
 
       {enfant.infosImportantes.length > 0 && (

@@ -149,6 +149,7 @@ export default async function FicheEnfantDirectionPage({
         groupeNom={enfant.groupe?.nom}
         allergies={enfant.allergies.map((a) => a.allergene.nom)}
         retourHref="/direction/enfants"
+        messagesHref={`/direction/messages/${id}`}
         plusActions={
           <>
             {enfant.autorisationPhotos === "AUTORISEE" && (

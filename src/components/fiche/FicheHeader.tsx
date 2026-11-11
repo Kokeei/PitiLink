@@ -21,12 +21,14 @@ export function FicheHeader({
   groupeNom,
   allergies,
   retourHref,
+  messagesHref,
   plusActions,
 }: {
   enfant: { prenom: string; nom: string; dateNaissance: Date; sexe: string | null; photoUrl: string | null; statut: string };
   groupeNom?: string | null;
   allergies: string[];
   retourHref: string;
+  messagesHref?: string;
   plusActions?: React.ReactNode;
 }) {
   return (
@@ -65,6 +67,11 @@ export function FicheHeader({
           <Link href="#onglet-general" className="btn-secondary text-sm">
             ✏️ Modifier
           </Link>
+          {messagesHref && (
+            <Link href={messagesHref} className="btn-secondary text-sm">
+              💬 Messages
+            </Link>
+          )}
           <Link href={retourHref} className="btn-secondary text-sm">
             ← Retour à la liste
           </Link>

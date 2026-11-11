@@ -111,6 +111,7 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
         groupeNom={enfant.groupe?.nom}
         allergies={enfant.allergies.map((a) => a.allergene.nom)}
         retourHref="/pro/groupe"
+        messagesHref={`/pro/messages/${id}`}
         plusActions={
           enfant.autorisationPhotos === "AUTORISEE" ? (
             <form action={modifierPhotoEnfant.bind(null, id)} className="space-y-1">
