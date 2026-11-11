@@ -200,10 +200,18 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
   base ; grille transformée en cartes verticales empilées sur mobile
 - Menu du jour resolu affiché directement sur la fiche enfant côté parent
 
+**Messagerie** (`/parent/messages`, `/pro/messages`, `/direction/messages`) — un seul canal
+d'échange par enfant entre ses parents et la garderie (direction/responsable + professionnels
+actuellement affectés), créé à la demande au premier message et dont les participants se
+resynchronisent automatiquement (nouvelle affectation, réaffectation). Liste des conversations
+(aperçu du dernier message, pastille « non lu ») et fil de discussion accessibles depuis chaque
+espace et depuis la fiche enfant ; une professionnelle ne voit que les enfants qui lui sont
+affectés, la direction voit tous les canaux de la garderie.
+
 **Notifications** — v1 minimale, en application uniquement (pas de push/email) : une
-notification est créée pour la direction quand un parent déclare une absence. La cloche de
-l'en-tête affiche les notifications réelles (non lues en gras) avec lien direct et action
-« tout marquer comme lu ».
+notification est créée pour la direction quand un parent déclare une absence, et pour les
+autres participants d'un canal quand un message est envoyé. La cloche de l'en-tête affiche les
+notifications réelles (non lues en gras) avec lien direct et action « tout marquer comme lu ».
 
 **Interface** — sidebar de navigation, recherche d'enfant, badges de notification, fiche
 enfant à onglets avec tuiles colorées (« Aujourd'hui »), photo de profil et galerie de
@@ -219,9 +227,8 @@ Le schéma de données prévoit déjà `Document`, `Absence`, `Message`/`Convers
 - Albums organisés automatiquement, tri intelligent des photos, contrôle fin des droits de
   diffusion **par photo** (§35-38) — l'autorisation par enfant est faite, l'upload de base
   (profil, souvenirs, documents) est fait
-- Messagerie parent ↔ garderie (le modèle existe, pas d'UI)
 - Notifications push/email (l'en-tête a une vraie boîte de notifications en app, sur
-  quelques événements seulement : absence déclarée)
+  quelques événements seulement : absence déclarée, message reçu)
 - Mot de passe oublié en libre-service par email : nécessite de choisir un fournisseur
   d'envoi d'email (aucun n'est configuré). En attendant : chaque utilisateur peut changer
   son propre mot de passe depuis « Mon compte », et la direction peut réinitialiser celui
