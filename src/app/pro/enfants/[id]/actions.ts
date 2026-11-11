@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PRO } from "@/lib/session";
 import { uploaderFichier } from "@/lib/blob";
-import { creerNotificationsParents } from "@/lib/notifications";
 
 async function contexte(enfantId: string) {
   const user = await requireUser(ROLES_PRO);
@@ -207,80 +206,6 @@ export async function marquerPresence(enfantId: string, type: "arrivee" | "depar
   });
 
   revalider(enfantId);
-}
-
-export async function enregistrerAcquisition(enfantId: string, formData: FormData) {
-  const { user, enfant } = await contexte(enfantId);
-  const competenceId = formData.get("competenceId") as string;
-  const note = (formData.get("note") as string) || undefined;
-  const photoUrl = (formData.get("photoUrl") as string) || undefined;
-  if (!competenceId) return;
-
-  const competence = await prisma.competence.findFirst({
-    where: { id: competenceId, garderieId: enfant.garderieId },
-  });
-  if (!competence) return;
-
-  await prisma.acquisitionCompetence.create({
-    data: {
-      garderieId: enfant.garderieId,
-      enfantId,
-      competenceId,
-      groupeId: enfant.groupeId,
-      auteurId: user.id,
-      note,
-      photoUrl,
-    },
-  });
-
-  await creerNotificationsParents(enfantId, {
-    type: "COMPETENCE_OBSERVEE",
-    contenu: `Nouvelle compétence observée pour ${enfant.prenom} : ${competence.nom}`,
-    lien: `/parent/enfants/${enfantId}`,
-  });
-
-  revalidatePath(`/pro/enfants/${enfantId}`);
-  revalidatePath(`/parent/enfants/${enfantId}`);
-  revalidatePath(`/direction/enfants/${enfantId}`);
-}
-
-export async function enregistrerAcquisitions(enfantId: string, formData: FormData) {
-  const { user, enfant } = await contexte(enfantId);
-  const competenceIds = formData.getAll("competenceIds") as string[];
-  const note = (formData.get("note") as string) || undefined;
-  const photoUrl = (formData.get("photoUrl") as string) || undefined;
-  if (competenceIds.length === 0) return;
-
-  const competences = await prisma.competence.findMany({
-    where: { id: { in: competenceIds }, garderieId: enfant.garderieId },
-    select: { id: true, nom: true },
-  });
-  if (competences.length === 0) return;
-
-  await prisma.acquisitionCompetence.createMany({
-    data: competences.map((c) => ({
-      garderieId: enfant.garderieId,
-      enfantId,
-      competenceId: c.id,
-      groupeId: enfant.groupeId,
-      auteurId: user.id,
-      note,
-      photoUrl,
-    })),
-  });
-
-  await creerNotificationsParents(enfantId, {
-    type: "COMPETENCE_OBSERVEE",
-    contenu:
-      competences.length === 1
-        ? `Nouvelle compétence observée pour ${enfant.prenom} : ${competences[0].nom}`
-        : `${competences.length} nouvelles compétences observées pour ${enfant.prenom}`,
-    lien: `/parent/enfants/${enfantId}`,
-  });
-
-  revalidatePath(`/pro/enfants/${enfantId}`);
-  revalidatePath(`/parent/enfants/${enfantId}`);
-  revalidatePath(`/direction/enfants/${enfantId}`);
 }
 
 export async function modifierPhotoEnfant(enfantId: string, formData: FormData) {

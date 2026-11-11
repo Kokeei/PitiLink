@@ -12,7 +12,6 @@ export const LIENS_DIRECTION: LienNav[] = [
   { href: "/direction/professionnels", label: "Professionnels", icone: "🧑‍🏫" },
   { href: "/direction/affectations", label: "Affectations", icone: "🔗" },
   { href: "/direction/menus", label: "Menus", icone: "🍽️" },
-  { href: "/direction/competences", label: "Compétences", icone: "🌱" },
 ];
 
 export const LIENS_PRO: LienNav[] = [

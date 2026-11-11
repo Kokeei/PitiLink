@@ -151,7 +151,6 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 - Déclaration d'absence (maladie/vacances/garde à domicile), avec certificat médical joint
   et incidence financière calculée automatiquement selon les règles de la garderie (§ règles
   de facturation ci-dessous) — pas de validation manuelle nécessaire
-- Progrès de l'enfant : résumé par catégorie + timeline des compétences observées
 
 **Direction** (`/direction`)
 - Tableau de bord (présences du jour, alertes « à traiter »)
@@ -164,7 +163,7 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
   avec bascule automatique vers l'historique à l'échéance, informations importantes, documents
   santé, contact d'urgence + médecin traitant), **Suivi quotidien** (journal par jour
   sélectionnable), **Menus** (menu réellement applicable à l'enfant sur la semaine, avec origine
-  et alerte allergène), **Activités** (compétences, activités récentes, galerie de souvenirs),
+  et alerte allergène), **Activités** (activités récentes, galerie de souvenirs),
   **Documents** (regroupés Administratif / Santé / Autres), **Historique** (événements marquants,
   générés automatiquement). Menu « Plus d'actions » pour changer le statut (suspendre/réactiver/
   archiver) sans encombrer l'en-tête.
@@ -174,8 +173,6 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
   rôles (direction et professionnels), pas seulement masqué côté interface.
 - Gestion des groupes, des professionnels (création de compte), des affectations
   (y compris réaffectation en cas d'absence d'une tatie)
-- Gestion du catalogue de compétences (catégories, âges indicatifs, activation) et
-  correction/suppression des acquisitions enregistrées
 - Absences : liste consolidée avec incidence financière calculée (décomptée/facturée),
   règles paramétrables par garderie (préavis minimum, traitement de la maladie avec/sans
   certificat), annulation d'une absence. Il n'y a pas de « validation » manuelle : la règle
@@ -204,25 +201,13 @@ Chaque Server Action revérifie en plus la session et le `garderieId` avant tout
 - Menu du jour resolu affiché directement sur la fiche enfant côté parent
 
 **Notifications** — v1 minimale, en application uniquement (pas de push/email) : une
-notification est créée pour la direction quand un parent déclare une absence, et pour les
-parents quand une nouvelle compétence est observée chez leur enfant. La cloche de l'en-tête
-affiche les notifications réelles (non lues en gras) avec lien direct et action « tout
-marquer comme lu ».
+notification est créée pour la direction quand un parent déclare une absence. La cloche de
+l'en-tête affiche les notifications réelles (non lues en gras) avec lien direct et action
+« tout marquer comme lu ».
 
 **Interface** — sidebar de navigation, recherche d'enfant, badges de notification, fiche
 enfant à onglets avec tuiles colorées (« Aujourd'hui »), photo de profil et galerie de
 souvenirs (upload via Vercel Blob), sur les trois espaces.
-
-**Suivi du développement / compétences** (cahier des charges §90)
-- Catalogue de compétences par catégorie (motricité, langage, socialisation, autonomie,
-  éveil...), personnalisable par la garderie, avec âge indicatif facultatif
-- Enregistrement en un clic côté pro, avec suggestions filtrées par âge de l'enfant et
-  compétences déjà acquises (jamais de validation automatique)
-- Note et lien photo optionnels ; traçabilité des corrections (auteur, date, note d'origine
-  conservée) ; suppression réservée à la direction
-- Espace parent : compteur de compétences par catégorie + timeline chronologique
-- Aucun diagnostic, classement ou comparaison entre enfants : l'absence d'un badge signifie
-  uniquement qu'il n'a pas encore été enregistré comme observé (§90.14)
 
 ## Non implémenté dans cette itération (roadmap V2 / V3 du CDC)
 
@@ -236,7 +221,7 @@ Le schéma de données prévoit déjà `Document`, `Absence`, `Message`/`Convers
   (profil, souvenirs, documents) est fait
 - Messagerie parent ↔ garderie (le modèle existe, pas d'UI)
 - Notifications push/email (l'en-tête a une vraie boîte de notifications en app, sur
-  quelques événements seulement : absence déclarée, compétence observée)
+  quelques événements seulement : absence déclarée)
 - Mot de passe oublié en libre-service par email : nécessite de choisir un fournisseur
   d'envoi d'email (aucun n'est configuré). En attendant : chaque utilisateur peut changer
   son propre mot de passe depuis « Mon compte », et la direction peut réinitialiser celui

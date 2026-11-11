@@ -14,7 +14,7 @@ const ICONE_SEXE: Record<string, string> = { GARCON: "♂", FILLE: "♀" };
 /**
  * En-tête compact de la fiche enfant : seulement ce qu'une tatie doit voir
  * en un coup d'œil (identité, groupe, statut, alerte allergie) — le reste
- * (parents, historique, dernière compétence...) est dans les onglets.
+ * (parents, historique...) est dans les onglets.
  */
 export function FicheHeader({
   enfant,

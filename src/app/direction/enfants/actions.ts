@@ -327,37 +327,6 @@ export async function supprimerAllergieEnfant(enfantId: string, allergieId: stri
   revalidatePath("/direction/menus");
 }
 
-export async function corrigerAcquisition(enfantId: string, acquisitionId: string, formData: FormData) {
-  const user = await requireUser(ROLES_DIRECTION);
-  const nouvelleNote = (formData.get("note") as string) || null;
-
-  const acquisition = await prisma.acquisitionCompetence.findFirst({
-    where: { id: acquisitionId, garderieId: user.garderieId! },
-  });
-  if (!acquisition) return;
-
-  await prisma.acquisitionCompetence.update({
-    where: { id: acquisitionId },
-    data: {
-      note: nouvelleNote,
-      noteOriginale: acquisition.noteOriginale ?? acquisition.note,
-      modifieParId: user.id,
-      modifieLe: new Date(),
-    },
-  });
-  revalidatePath(`/direction/enfants/${enfantId}`);
-  revalidatePath(`/parent/enfants/${enfantId}`);
-}
-
-export async function supprimerAcquisition(enfantId: string, acquisitionId: string) {
-  const user = await requireUser(ROLES_DIRECTION);
-  await prisma.acquisitionCompetence.deleteMany({
-    where: { id: acquisitionId, garderieId: user.garderieId! },
-  });
-  revalidatePath(`/direction/enfants/${enfantId}`);
-  revalidatePath(`/parent/enfants/${enfantId}`);
-}
-
 export async function modifierPhotoEnfant(enfantId: string, formData: FormData) {
   const user = await requireUser(ROLES_DIRECTION);
   const fichier = formData.get("photo") as File | null;

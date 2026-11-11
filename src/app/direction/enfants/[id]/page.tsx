@@ -3,7 +3,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_DIRECTION } from "@/lib/session";
 import { formatDate, formatHeure } from "@/lib/format";
-import { getAcquisitionsEnfant, getBadgesCompetences } from "@/lib/competences";
 import { getJournalDuJour, getActivitesRecentes } from "@/lib/data";
 import { OPTIONS_LIEN } from "@/lib/famille";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, parseJson, resumeEvenement } from "@/lib/journal";
@@ -22,7 +21,6 @@ import {
   type CategorieDocument,
 } from "@/lib/enfants";
 import { FicheHeader } from "@/components/fiche/FicheHeader";
-import { BadgesCompetences } from "@/components/fiche/BadgesCompetences";
 import { GaleriePhotos } from "@/components/fiche/GaleriePhotos";
 import { CarteParents } from "@/components/fiche/CarteParents";
 import { Tabs } from "@/components/fiche/Tabs";
@@ -45,8 +43,6 @@ import {
   ajouterPersonneAutorisee,
   supprimerPersonneAutorisee,
   changerStatutEnfant,
-  corrigerAcquisition,
-  supprimerAcquisition,
   ajouterPhotoSouvenir,
   supprimerPhotoSouvenir,
   ajouterDocument,
@@ -109,9 +105,7 @@ export default async function FicheEnfantDirectionPage({
   lendemain.setDate(lendemain.getDate() + 1);
 
   const lundi = lundiDeLaSemaine();
-  const [acquisitions, badges, journal, activitesRecentes, semaineMenu, typesRepas] = await Promise.all([
-    getAcquisitionsEnfant(id),
-    getBadgesCompetences(id, garderieId),
+  const [journal, activitesRecentes, semaineMenu, typesRepas] = await Promise.all([
     getJournalDuJour(id, dateAffichee),
     getActivitesRecentes(id),
     prisma.semaineMenu.findUnique({
@@ -634,8 +628,6 @@ export default async function FicheEnfantDirectionPage({
             icone: "🌱",
             content: (
               <div className="space-y-4">
-                <BadgesCompetences badges={badges} />
-
                 <div className="card space-y-3">
                   <p className="font-semibold">🎨 Activités récentes</p>
                   {activitesRecentes.length === 0 && <p className="text-sm text-stone-500">Aucune activité enregistrée récemment.</p>}
@@ -644,36 +636,6 @@ export default async function FicheEnfantDirectionPage({
                       <li key={a.id} className="flex items-center justify-between border-b border-stone-100 pb-1 last:border-0">
                         <span>{resumeEvenement("ACTIVITE", parseJson(a.donneesReelles)) || "Activité"}</span>
                         <span className="text-xs text-stone-400">{formatDate(a.timestamp)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="card space-y-3">
-                  <p className="font-semibold">✓ Compétences observées</p>
-                  {acquisitions.length === 0 && <p className="text-sm text-stone-500">Aucune compétence enregistrée.</p>}
-                  <ul className="space-y-3">
-                    {acquisitions.map((a) => (
-                      <li key={a.id} className="rounded-lg bg-stone-50 p-3 text-sm">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium">
-                              ✓ {a.competence.icone ?? a.competence.categorie.icone} {a.competence.nom}{" "}
-                              <span className="font-normal text-stone-400">— {formatDate(a.dateObservation)}</span>
-                            </p>
-                            <p className="text-xs text-stone-400">
-                              observé par {a.auteur.prenom} {a.auteur.nom}
-                              {a.modifiePar && ` · corrigé par ${a.modifiePar.prenom} le ${formatDate(a.modifieLe!)}`}
-                            </p>
-                          </div>
-                          <form action={supprimerAcquisition.bind(null, id, a.id)}>
-                            <button className="text-xs text-red-600">Supprimer</button>
-                          </form>
-                        </div>
-                        <form action={corrigerAcquisition.bind(null, id, a.id)} className="mt-2 flex gap-2">
-                          <input name="note" defaultValue={a.note ?? ""} placeholder="Note" className="input-large flex-1 text-sm" />
-                          <button className="btn-secondary text-sm">Corriger</button>
-                        </form>
                       </li>
                     ))}
                   </ul>

@@ -4,11 +4,9 @@ import { requireUser, ROLES_PARENT } from "@/lib/session";
 import { getJournalDuJour } from "@/lib/data";
 import { formatDate, formatHeure, debutJournee } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, parseJson, resumeEvenement } from "@/lib/journal";
-import { getBadgesCompetences, getAcquisitionsEnfant } from "@/lib/competences";
 import { lundiDeLaSemaine, resoudreMenuEnfant, type EntreeMenu } from "@/lib/menus";
 import { EnTeteEnfant } from "@/components/fiche/EnTeteEnfant";
 import { TuilesAujourdhui } from "@/components/fiche/TuilesAujourdhui";
-import { BadgesCompetences } from "@/components/fiche/BadgesCompetences";
 import { GaleriePhotos } from "@/components/fiche/GaleriePhotos";
 import { ajouterMesureCroissance, transmettreInformation, ajouterContactUrgence } from "./actions";
 
@@ -96,11 +94,6 @@ export default async function FicheEnfantParentPage({
   );
 
   const referente = enfant.affectations.find((a) => a.referente)?.professionnel;
-  const [badges, acquisitions] = await Promise.all([
-    getBadgesCompetences(id, enfant.garderieId),
-    getAcquisitionsEnfant(id),
-  ]);
-  const derniereCompetence = acquisitions[0]?.competence;
 
   return (
     <div className="space-y-4">
@@ -108,7 +101,6 @@ export default async function FicheEnfantParentPage({
         enfant={enfant}
         referente={referente ? `${referente.prenom} ${referente.nom}` : undefined}
         petitMot={estAujourdhui ? petitMot?.commentaire : undefined}
-        derniereCompetence={derniereCompetence}
       />
 
       {enfant.infosImportantes.length > 0 && (
@@ -237,27 +229,6 @@ export default async function FicheEnfantParentPage({
           </table>
         )}
       </div>
-
-      <BadgesCompetences badges={badges} />
-
-      {acquisitions.length > 0 && (
-        <div className="card space-y-2">
-          <p className="font-semibold">🌱 Historique des progrès</p>
-          <ul className="space-y-3">
-            {acquisitions.map((a) => (
-              <li key={a.id} className="flex gap-3">
-                <span className="text-xl">{a.competence.icone ?? a.competence.categorie.icone}</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    {a.competence.nom} <span className="font-normal text-stone-400">— {formatDate(a.dateObservation)}</span>
-                  </p>
-                  {a.note && <p className="text-sm text-stone-500">« {a.note} »</p>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <GaleriePhotos photos={enfant.photos} />
 

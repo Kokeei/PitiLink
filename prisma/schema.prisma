@@ -49,9 +49,6 @@ model Garderie {
   journalEvenements      JournalEvenement[]
   documents              Document[]
   photos                 Photo[]
-  categoriesCompetences  CategorieCompetence[]
-  competences            Competence[]
-  acquisitionsCompetence AcquisitionCompetence[]
   allergenes             Allergene[]
   aliments               Aliment[]
   typesRepas             TypeRepas[]
@@ -89,8 +86,6 @@ model User {
   mesuresSaisies        Croissance[]
   absencesCreees        Absence[]
   notifications         Notification[]
-  acquisitionsObservees AcquisitionCompetence[]   @relation("AuteurAcquisition")
-  acquisitionsModifiees AcquisitionCompetence[]   @relation("ModificateurAcquisition")
   photosPubliees        Photo[]
   delegationsInitiees   Delegation[] @relation("DelegationsAdmin")
   delegationsCibles     Delegation[] @relation("DelegationsCible")
@@ -131,7 +126,6 @@ model Groupe {
 
   enfants                Enfant[]
   affectations           Affectation[]
-  acquisitionsCompetence AcquisitionCompetence[]
   menuEntrees            MenuEntree[]
 
   @@index([garderieId])
@@ -203,7 +197,6 @@ model Enfant {
   absences               Absence[]
   documents              Document[]
   photos                 Photo[]
-  acquisitionsCompetence AcquisitionCompetence[]
   allergies              AllergieEnfant[]
   menuEntrees            MenuEntree[]
   traitements            Traitement[]
@@ -785,83 +778,3 @@ model Notification {
   @@map("notifications")
 }
 
-// ---------------------------------------------------------------------------
-// Suivi du developpement et acquisition de competences (badges de progres)
-//
-// Outil d'observation et de valorisation uniquement : aucune donnee ici ne
-// doit permettre de calculer un retard, un classement ou un diagnostic.
-// L'absence d'une acquisition signifie seulement qu'elle n'a pas encore ete
-// enregistree comme observee.
-// ---------------------------------------------------------------------------
-
-model CategorieCompetence {
-  id         String   @id @default(cuid())
-  garderieId String
-  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
-
-  nom   String
-  icone String?
-  ordre Int     @default(0)
-  actif Boolean @default(true)
-
-  competences Competence[]
-
-  @@index([garderieId])
-  @@map("categories_competences")
-}
-
-model Competence {
-  id          String              @id @default(cuid())
-  garderieId  String
-  garderie    Garderie            @relation(fields: [garderieId], references: [id], onDelete: Cascade)
-  categorieId String
-  categorie   CategorieCompetence @relation(fields: [categorieId], references: [id], onDelete: Cascade)
-
-  nom                 String
-  icone               String?
-  description         String?
-  ordreAffichage      Int      @default(0)
-  ageIndicatifMoisMin Int?
-  ageIndicatifMoisMax Int?
-  actif               Boolean  @default(true)
-  createdAt           DateTime @default(now())
-
-  acquisitions AcquisitionCompetence[]
-
-  @@index([garderieId])
-  @@index([categorieId])
-  @@map("competences")
-}
-
-model AcquisitionCompetence {
-  id           String     @id @default(cuid())
-  garderieId   String
-  garderie     Garderie   @relation(fields: [garderieId], references: [id], onDelete: Cascade)
-  enfantId     String
-  enfant       Enfant     @relation(fields: [enfantId], references: [id], onDelete: Cascade)
-  competenceId String
-  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
-  groupeId     String?
-  groupe       Groupe?    @relation(fields: [groupeId], references: [id], onDelete: SetNull)
-
-  dateObservation DateTime @default(now())
-  note            String?
-  photoUrl        String?
-
-  auteurId String
-  auteur   User   @relation("AuteurAcquisition", fields: [auteurId], references: [id], onDelete: Cascade)
-
-  // Tracabilite des corrections (§90.11) : on conserve la note d'origine et
-  // qui/quand a corrige, sans supprimer l'observation initiale.
-  noteOriginale String?
-  modifieParId  String?
-  modifiePar    User?     @relation("ModificateurAcquisition", fields: [modifieParId], references: [id], onDelete: SetNull)
-  modifieLe     DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([garderieId])
-  @@index([enfantId, dateObservation])
-  @@index([competenceId])
-  @@map("acquisitions_competences")
-}
