@@ -133,11 +133,24 @@ export async function obtenirFilDiscussion(enfantId: string, userId: string) {
   });
 }
 
+/**
+ * N'envoie le message que si `auteurId` est bien participant du canal de
+ * cet enfant (parent lié, direction/responsable, ou professionnel
+ * actuellement affecté) — l'appelant doit malgré tout vérifier en amont
+ * que l'enfant est dans son périmètre, cette fonction est le dernier
+ * rempart si une vérification côté route a un trou.
+ */
 export async function envoyerMessage(enfantId: string, auteurId: string, contenu: string) {
   const texte = contenu.trim();
   if (!texte) return null;
 
   const conversationId = await obtenirConversationEnfant(enfantId);
+
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: { conversationId_userId: { conversationId, userId: auteurId } },
+  });
+  if (!participant) return null;
+
   const message = await prisma.message.create({
     data: { conversationId, auteurId, contenu: texte },
     include: { auteur: { select: { prenom: true, nom: true, role: true } } },

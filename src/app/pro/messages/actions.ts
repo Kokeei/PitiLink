@@ -10,6 +10,13 @@ export async function envoyerMessagePro(enfantId: string, formData: FormData) {
   const enfant = await prisma.enfant.findFirst({ where: { id: enfantId, garderieId: user.garderieId! } });
   if (!enfant) return;
 
+  // Une professionnelle ne peut écrire que sur le canal des enfants qui lui
+  // sont actuellement affectés (direction/responsable, eux, voient tout).
+  if (user.role === "PROFESSIONNEL") {
+    const affectation = await prisma.affectation.findFirst({ where: { enfantId, professionnelId: user.id, actif: true } });
+    if (!affectation) return;
+  }
+
   await envoyerMessage(enfantId, user.id, (formData.get("contenu") as string) ?? "");
   revalidatePath(`/pro/messages/${enfantId}`);
   revalidatePath("/pro/messages");
