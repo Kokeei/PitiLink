@@ -16,6 +16,7 @@ import { FicheHeader } from "@/components/fiche/FicheHeader";
 import { GaleriePhotos } from "@/components/fiche/GaleriePhotos";
 import { CarteParents } from "@/components/fiche/CarteParents";
 import { Tabs } from "@/components/fiche/Tabs";
+import { ChampDictee } from "@/components/fiche/ChampDictee";
 import {
   ajouterBiberon,
   ajouterRepas,
@@ -387,7 +388,7 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
                     </div>
                   )}
                   <form action={ajouterObservation.bind(null, id)} className="space-y-2">
-                    <textarea name="commentaire" rows={2} className="input-large" placeholder="Observation libre..." />
+                    <ChampDictee name="commentaire" rows={2} placeholder="Observation libre..." />
                     <button className="btn-secondary w-full">Ajouter</button>
                   </form>
                 </div>

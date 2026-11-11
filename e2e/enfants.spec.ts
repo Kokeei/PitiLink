@@ -168,4 +168,18 @@ test.describe("Enfants — permissions", () => {
     await expect(page.getByText("Suspendre")).toHaveCount(0);
     await expect(page.getByText("Archiver")).toHaveCount(0);
   });
+
+  test("le champ Observation propose la dictée vocale (Web Speech API du navigateur)", async ({ page }) => {
+    await connecter(page, "ana.demo@pitilink.local");
+    await page.goto("/pro/groupe");
+    await page.waitForLoadState("networkidle");
+    await page.locator('a[href*="/pro/enfants/"]').first().click();
+    await page.waitForURL(/\/pro\/enfants\//, { timeout: 15000 });
+    await page.waitForSelector("text=Retour à la liste", { timeout: 15000 });
+
+    await page.getByRole("button", { name: "📋 Suivi quotidien" }).click();
+    const champObservation = page.locator('textarea[name="commentaire"]');
+    await expect(champObservation).toBeVisible();
+    await expect(page.getByRole("button", { name: /Dicter l'observation/ })).toBeVisible();
+  });
 });
