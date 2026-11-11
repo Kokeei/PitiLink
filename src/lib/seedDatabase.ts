@@ -514,6 +514,185 @@ export async function seedDatabase(prisma: PrismaClient) {
     ],
   });
 
+  // -------------------------------------------------------------------
+  // Comptes de test ("personas") pour valider le parcours complet de
+  // chaque rôle : un parent de deux enfants, une tatie très sollicitée
+  // (affectée à la quasi-totalité du groupe) et une seconde direction.
+  // -------------------------------------------------------------------
+
+  const [testParent, testTatie, testDirectrice] = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: "test.parent@pitilink.local",
+        passwordHash: hash,
+        prenom: "Test",
+        nom: "Parent",
+        role: "PARENT",
+        garderieId: garderie.id,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "test.tatie@pitilink.local",
+        passwordHash: hash,
+        prenom: "Test",
+        nom: "Tatie",
+        role: "PROFESSIONNEL",
+        garderieId: garderie.id,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "test.directrice@pitilink.local",
+        passwordHash: hash,
+        prenom: "Test",
+        nom: "Directrice",
+        role: "DIRECTION",
+        garderieId: garderie.id,
+      },
+    }),
+  ]);
+
+  const noe = await prisma.enfant.create({
+    data: {
+      garderieId: garderie.id,
+      groupeId: groupeBebes.id,
+      prenom: "Noé",
+      nom: "Rivière",
+      dateNaissance: new Date(Date.now() - 240 * 86400000), // ~8 mois
+      sexe: "GARCON",
+      dateInscription: new Date(Date.now() - 60 * 86400000),
+      dateDebutAccueil: new Date(Date.now() - 45 * 86400000),
+      statut: "ACTIF",
+      autorisationPhotos: "AUTORISEE",
+      joursPresence: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+      horaireHabituel: "08h00 - 18h00",
+    },
+  });
+
+  const alice = await prisma.enfant.create({
+    data: {
+      garderieId: garderie.id,
+      groupeId: groupeMoyens.id,
+      prenom: "Alice",
+      nom: "Rivière",
+      dateNaissance: new Date(Date.now() - 910 * 86400000), // ~2 ans et demi
+      sexe: "FILLE",
+      dateInscription: new Date(Date.now() - 60 * 86400000),
+      dateDebutAccueil: new Date(Date.now() - 45 * 86400000),
+      statut: "ACTIF",
+      autorisationPhotos: "AUTORISEE",
+      joursPresence: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+      horaireHabituel: "08h00 - 18h00",
+    },
+  });
+
+  await prisma.parentEnfant.createMany({
+    data: [
+      { enfantId: noe.id, userId: testParent.id, lien: "AUTRE", estContactUrgence: true },
+      { enfantId: alice.id, userId: testParent.id, lien: "AUTRE", estContactUrgence: true },
+    ],
+  });
+
+  await prisma.contactUrgence.createMany({
+    data: [
+      { enfantId: noe.id, nom: "Parent", prenom: "Test", lien: "Parent", telephone: "06 00 00 00 01", ordrePriorite: 1 },
+      { enfantId: alice.id, nom: "Parent", prenom: "Test", lien: "Parent", telephone: "06 00 00 00 01", ordrePriorite: 1 },
+    ],
+  });
+
+  // La tatie de test est volontairement très chargée : référente des deux
+  // nouveaux enfants, et en renfort (non référente) sur les trois enfants
+  // existants qui ont déjà chacun leur référente habituelle.
+  await prisma.affectation.createMany({
+    data: [
+      { enfantId: noe.id, professionnelId: testTatie.id, groupeId: groupeBebes.id, referente: true, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: alice.id, professionnelId: testTatie.id, groupeId: groupeMoyens.id, referente: true, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: kiivai.id, professionnelId: testTatie.id, groupeId: groupeBebes.id, referente: false, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: emma.id, professionnelId: testTatie.id, groupeId: groupeBebes.id, referente: false, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: noah.id, professionnelId: testTatie.id, groupeId: groupeMoyens.id, referente: false, joursSemaine: [1, 2, 3, 4, 5] },
+    ],
+  });
+
+  await prisma.presence.createMany({
+    data: [
+      { enfantId: noe.id, date: aujourdhui, statut: "PRESENT", heureArrivee: new Date(new Date().setHours(8, 5)) },
+      { enfantId: alice.id, date: aujourdhui, statut: "PRESENT", heureArrivee: new Date(new Date().setHours(8, 20)) },
+    ],
+  });
+
+  await prisma.journalEvenement.createMany({
+    data: [
+      { garderieId: garderie.id, enfantId: noe.id, type: "ARRIVEE", statut: "REALISE", timestamp: heure(8, 5), auteurId: testTatie.id },
+      {
+        garderieId: garderie.id,
+        enfantId: noe.id,
+        type: "BIBERON",
+        statut: "REALISE",
+        timestamp: heure(9, 0),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ quantiteMl: 180, type: "lait infantile" }),
+      },
+      {
+        garderieId: garderie.id,
+        enfantId: noe.id,
+        type: "SIESTE",
+        statut: "REALISE",
+        timestamp: heure(10, 0),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ heureDebut: "10:00", heureFin: "11:15", qualite: "bien" }),
+      },
+      { garderieId: garderie.id, enfantId: alice.id, type: "ARRIVEE", statut: "REALISE", timestamp: heure(8, 20), auteurId: testTatie.id },
+      {
+        garderieId: garderie.id,
+        enfantId: alice.id,
+        type: "REPAS",
+        statut: "REALISE",
+        timestamp: heure(11, 45),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ repas: "Déjeuner", quantite: "Bien mangé" }),
+      },
+      {
+        garderieId: garderie.id,
+        enfantId: alice.id,
+        type: "ACTIVITE",
+        statut: "REALISE",
+        timestamp: heure(14, 30),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ nom: "Motricité libre" }),
+      },
+      {
+        garderieId: garderie.id,
+        enfantId: alice.id,
+        type: "OBSERVATION",
+        statut: "REALISE",
+        timestamp: heure(16, 0),
+        auteurId: testTatie.id,
+        commentaire: "Très joueuse aujourd'hui, a bien participé à l'activité motricité.",
+      },
+    ],
+  });
+
+  await prisma.croissance.createMany({
+    data: [
+      { enfantId: noe.id, date: aujourdhui, poidsKg: 8.1, tailleCm: 68, perimetreCranienCm: 43, auteurId: testTatie.id },
+      { enfantId: alice.id, date: aujourdhui, poidsKg: 13.4, tailleCm: 91, auteurId: testTatie.id },
+    ],
+  });
+
+  // Une absence maladie sans certificat (donc facturée) : un "souci" de
+  // facturation concret pour la direction de test.
+  await prisma.absence.create({
+    data: {
+      enfantId: noe.id,
+      type: "MALADIE",
+      dateDebut: aujourdhui,
+      dateFin: aujourdhui,
+      commentaire: "Fièvre dans la nuit, garde à la maison aujourd'hui.",
+      declareParId: testParent.id,
+    },
+  });
+
   return {
     motDePasse: MOT_DE_PASSE_DEMO,
     comptes: {
@@ -522,6 +701,9 @@ export async function seedDatabase(prisma: PrismaClient) {
       responsable: "responsable.demo@pitilink.local",
       professionnels: ["ana.demo@pitilink.local", "julie.demo@pitilink.local"],
       parents: ["parent.demo@pitilink.local", "papa.demo@pitilink.local"],
+      testParent: testParent.email,
+      testTatie: testTatie.email,
+      testDirectrice: testDirectrice.email,
     },
   };
 }
