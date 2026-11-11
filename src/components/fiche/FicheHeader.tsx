@@ -14,19 +14,21 @@ const ICONE_SEXE: Record<string, string> = { GARCON: "♂", FILLE: "♀" };
 /**
  * En-tête compact de la fiche enfant : seulement ce qu'une tatie doit voir
  * en un coup d'œil (identité, groupe, statut, alerte allergie) — le reste
- * (parents, historique, dernière compétence...) est dans les onglets.
+ * (parents, historique...) est dans les onglets.
  */
 export function FicheHeader({
   enfant,
   groupeNom,
   allergies,
   retourHref,
+  messagesHref,
   plusActions,
 }: {
   enfant: { prenom: string; nom: string; dateNaissance: Date; sexe: string | null; photoUrl: string | null; statut: string };
   groupeNom?: string | null;
   allergies: string[];
   retourHref: string;
+  messagesHref?: string;
   plusActions?: React.ReactNode;
 }) {
   return (
@@ -65,6 +67,11 @@ export function FicheHeader({
           <Link href="#onglet-general" className="btn-secondary text-sm">
             ✏️ Modifier
           </Link>
+          {messagesHref && (
+            <Link href={messagesHref} className="btn-secondary text-sm">
+              💬 Messages
+            </Link>
+          )}
           <Link href={retourHref} className="btn-secondary text-sm">
             ← Retour à la liste
           </Link>

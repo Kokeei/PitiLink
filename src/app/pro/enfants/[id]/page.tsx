@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, ROLES_PRO } from "@/lib/session";
 import { getJournalDuJour, getPresenceDuJour, getActivitesRecentes } from "@/lib/data";
-import { getSuggestionsCompetences, getCatalogueGroupe, getAcquisitionsEnfant, getBadgesCompetences } from "@/lib/competences";
 import { formatDate, formatHeure } from "@/lib/format";
 import { ICONES_EVENEMENT, LIBELLES_EVENEMENT, HUMEURS, parseJson, resumeEvenement } from "@/lib/journal";
 import { JOURS_MENU, lundiDeLaSemaine, resoudreMenuEnfant, detecterConflitsAllergie, type EntreeMenu } from "@/lib/menus";
@@ -14,10 +13,10 @@ import {
   type CategorieDocument,
 } from "@/lib/enfants";
 import { FicheHeader } from "@/components/fiche/FicheHeader";
-import { BadgesCompetences } from "@/components/fiche/BadgesCompetences";
 import { GaleriePhotos } from "@/components/fiche/GaleriePhotos";
 import { CarteParents } from "@/components/fiche/CarteParents";
 import { Tabs } from "@/components/fiche/Tabs";
+import { ChampDictee } from "@/components/fiche/ChampDictee";
 import {
   ajouterBiberon,
   ajouterRepas,
@@ -29,8 +28,6 @@ import {
   ajouterBain,
   ajouterObservation,
   marquerPresence,
-  enregistrerAcquisition,
-  enregistrerAcquisitions,
   modifierPhotoEnfant,
   ajouterPhotoSouvenir,
 } from "./actions";
@@ -69,14 +66,10 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
   if (!enfant) notFound();
 
   const lundi = lundiDeLaSemaine();
-  const [journal, presence, activites, suggestionsCompetences, catalogue, acquisitions, badges, activitesRecentes, semaineMenu, typesRepas, aliments] = await Promise.all([
+  const [journal, presence, activites, activitesRecentes, semaineMenu, typesRepas, aliments] = await Promise.all([
     getJournalDuJour(id),
     getPresenceDuJour(id),
     prisma.activite.findMany({ where: { garderieId }, orderBy: { nom: "asc" } }),
-    getSuggestionsCompetences(id, garderieId, enfant.dateNaissance),
-    getCatalogueGroupe(garderieId),
-    getAcquisitionsEnfant(id),
-    getBadgesCompetences(id, garderieId),
     getActivitesRecentes(id),
     prisma.semaineMenu.findUnique({
       where: { garderieId_dateDebut: { garderieId, dateDebut: lundi } },
@@ -119,6 +112,7 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
         groupeNom={enfant.groupe?.nom}
         allergies={enfant.allergies.map((a) => a.allergene.nom)}
         retourHref="/pro/groupe"
+        messagesHref={`/pro/messages/${id}`}
         plusActions={
           enfant.autorisationPhotos === "AUTORISEE" ? (
             <form action={modifierPhotoEnfant.bind(null, id)} className="space-y-1">
@@ -394,7 +388,7 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
                     </div>
                   )}
                   <form action={ajouterObservation.bind(null, id)} className="space-y-2">
-                    <textarea name="commentaire" rows={2} className="input-large" placeholder="Observation libre..." />
+                    <ChampDictee name="commentaire" rows={2} placeholder="Observation libre..." />
                     <button className="btn-secondary w-full">Ajouter</button>
                   </form>
                 </div>
@@ -464,51 +458,6 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
             icone: "🌱",
             content: (
               <div className="space-y-4">
-                <BadgesCompetences badges={badges} />
-
-                <div className="card space-y-3">
-                  <p className="text-xs text-stone-400">Outil d&apos;observation : l&apos;absence d&apos;un badge signifie seulement qu&apos;il n&apos;a pas encore été enregistré.</p>
-
-                  {suggestionsCompetences.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm text-stone-500">💡 Compétences pouvant être observées</p>
-                      <div className="flex flex-wrap gap-2">
-                        {suggestionsCompetences.map((c) => (
-                          <form key={c.id} action={enregistrerAcquisition.bind(null, id)}>
-                            <input type="hidden" name="competenceId" value={c.id} />
-                            <button className="btn-secondary text-sm">
-                              {c.icone ?? c.categorie.icone} {c.nom}
-                            </button>
-                          </form>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <form action={enregistrerAcquisitions.bind(null, id)} className="space-y-2">
-                    <details className="rounded-xl border-2 border-stone-200">
-                      <summary className="cursor-pointer select-none rounded-xl px-4 py-3 text-base font-medium">📋 Choisir dans le catalogue...</summary>
-                      <div className="max-h-72 space-y-3 overflow-y-auto border-t border-stone-200 p-3">
-                        {catalogue.map((cat) => (
-                          <div key={cat.id}>
-                            <p className="mb-1 text-xs font-semibold text-stone-500">
-                              {cat.icone} {cat.nom}
-                            </p>
-                            {cat.competences.map((c) => (
-                              <label key={c.id} className="flex items-center gap-2 py-1.5 text-sm">
-                                <input type="checkbox" name="competenceIds" value={c.id} className="h-5 w-5" />
-                                {c.icone} {c.nom}
-                              </label>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                    <textarea name="note" rows={2} className="input-large" placeholder="Note (optionnel)" />
-                    <button className="btn-primary w-full">✓ Valider les compétences sélectionnées</button>
-                  </form>
-                </div>
-
                 <div className="card space-y-3">
                   <p className="font-semibold">🎨 Activités récentes</p>
                   {activitesRecentes.length === 0 && <p className="text-sm text-stone-500">Aucune activité enregistrée récemment.</p>}
@@ -521,23 +470,6 @@ export default async function FicheEnfantProPage({ params }: { params: Promise<{
                     ))}
                   </ul>
                 </div>
-
-                {acquisitions.length > 0 && (
-                  <div className="card space-y-2">
-                    <p className="font-semibold">✓ Compétences observées</p>
-                    <ul className="space-y-2">
-                      {acquisitions.slice(0, 12).map((a) => (
-                        <li key={a.id} className="text-sm">
-                          <p>
-                            <span className="text-lg">{a.competence.icone ?? a.competence.categorie.icone}</span> <span className="font-medium">{a.competence.nom}</span>{" "}
-                            <span className="text-stone-400">— {formatDate(a.dateObservation)}</span>
-                          </p>
-                          {a.note && <p className="text-stone-500">« {a.note} »</p>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
                 <GaleriePhotos photos={enfant.photos} ajouterAction={ajouterPhotoSouvenir.bind(null, id)} autorisation={enfant.autorisationPhotos} />
               </div>

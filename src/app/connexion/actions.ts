@@ -3,6 +3,7 @@
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { MOT_DE_PASSE_DEMO } from "@/lib/seedDatabase";
 
 export async function connexionAction(
   _prevState: { erreur: string | null },
@@ -27,6 +28,34 @@ export async function connexionAction(
     if (error instanceof AuthError) {
       return { erreur: "Email ou mot de passe incorrect." };
     }
+    throw error;
+  }
+}
+
+// Liste fermée des comptes de démonstration/test : jamais d'email arbitraire,
+// même si cette action était appelée avec une valeur différente de celles
+// proposées par la page — c'est le seul garde-fou, le mot de passe n'étant
+// lui-même jamais transmis par le client.
+const COMPTES_ACCES_RAPIDE = new Set([
+  "admin.demo@pitilink.local",
+  "direction.demo@pitilink.local",
+  "responsable.demo@pitilink.local",
+  "ana.demo@pitilink.local",
+  "julie.demo@pitilink.local",
+  "parent.demo@pitilink.local",
+  "papa.demo@pitilink.local",
+  "test.parent@pitilink.local",
+  "test.tatie@pitilink.local",
+  "test.directrice@pitilink.local",
+]);
+
+export async function connexionRapideAction(email: string) {
+  if (!COMPTES_ACCES_RAPIDE.has(email)) return;
+
+  try {
+    await signIn("credentials", { email, password: MOT_DE_PASSE_DEMO, redirectTo: "/" });
+  } catch (error) {
+    if (error instanceof AuthError) return;
     throw error;
   }
 }

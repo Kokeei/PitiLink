@@ -1,6 +1,6 @@
-// Palette pastel partagée : utilisée pour les tuiles du jour, les badges de
-// catégories de compétences, etc. Cycle par index plutôt que par nom, pour
-// rester cohérent même si une garderie renomme ou ajoute des catégories.
+// Palette pastel partagée, utilisée pour les couleurs des groupes. Cycle
+// par index plutôt que par nom, pour rester cohérent même si une garderie
+// renomme ou ajoute des groupes.
 export const PALETTE = [
   { bg: "bg-emerald-50", text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
   { bg: "bg-orange-50", text: "text-orange-700", badge: "bg-orange-100 text-orange-700" },

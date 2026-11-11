@@ -21,6 +21,9 @@ async function main() {
   console.log("  Responsable   :", resultat.comptes.responsable);
   console.log("  Professionnel :", resultat.comptes.professionnels.join(" / "));
   console.log("  Parent        :", resultat.comptes.parents.join(" / "));
+  console.log("  Test parent   :", resultat.comptes.testParent);
+  console.log("  Test tatie    :", resultat.comptes.testTatie);
+  console.log("  Test direction:", resultat.comptes.testDirectrice);
 }
 
 main()

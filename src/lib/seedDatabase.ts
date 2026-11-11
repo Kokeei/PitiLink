@@ -5,9 +5,9 @@ import { lundiDeLaSemaine } from "@/lib/menus";
 export const MOT_DE_PASSE_DEMO = "Password123!";
 
 /**
- * Peuple une base vide avec la garderie de démonstration (données du MVP +
- * du module compétences). Idempotence : à appeler uniquement si la base est
- * vide (voir la garde dans /api/setup et prisma/seed.ts).
+ * Peuple une base vide avec la garderie de démonstration (données du MVP).
+ * Idempotence : à appeler uniquement si la base est vide (voir la garde dans
+ * /api/setup et prisma/seed.ts).
  */
 export async function seedDatabase(prisma: PrismaClient) {
   const hash = await bcrypt.hash(MOT_DE_PASSE_DEMO, 10);
@@ -515,146 +515,182 @@ export async function seedDatabase(prisma: PrismaClient) {
   });
 
   // -------------------------------------------------------------------
-  // Suivi du développement : catégories + catalogue de compétences (§90)
+  // Comptes de test ("personas") pour valider le parcours complet de
+  // chaque rôle : un parent de deux enfants, une tatie très sollicitée
+  // (affectée à la quasi-totalité du groupe) et une seconde direction.
   // -------------------------------------------------------------------
 
-  const categoriesData = [
-    { key: "cognition", nom: "Cognition / éveil", icone: "🧠", ordre: 1 },
-    { key: "langage", nom: "Langage et communication", icone: "🗣️", ordre: 2 },
-    { key: "motriciteGlobale", nom: "Motricité globale", icone: "🐾", ordre: 3 },
-    { key: "motriciteFine", nom: "Motricité fine", icone: "✋", ordre: 4 },
-    { key: "socialisation", nom: "Socialisation", icone: "❤️", ordre: 5 },
-    { key: "autonomie", nom: "Autonomie", icone: "🧸", ordre: 6 },
-    { key: "creativite", nom: "Créativité", icone: "🎨", ordre: 7 },
-    { key: "sensoriel", nom: "Éveil sensoriel", icone: "👂", ordre: 8 },
-    { key: "musical", nom: "Éveil musical", icone: "🎵", ordre: 9 },
-  ] as const;
-
-  const categories: Record<(typeof categoriesData)[number]["key"], { id: string }> = {} as never;
-  for (const c of categoriesData) {
-    categories[c.key] = await prisma.categorieCompetence.create({
-      data: { garderieId: garderie.id, nom: c.nom, icone: c.icone, ordre: c.ordre },
-    });
-  }
-
-  const competencesData: {
-    categorie: (typeof categoriesData)[number]["key"];
-    nom: string;
-    icone: string;
-    ageMin?: number;
-    ageMax?: number;
-  }[] = [
-    // Motricité globale
-    { categorie: "motriciteGlobale", nom: "Se retourne", icone: "🐾", ageMin: 3, ageMax: 5 },
-    { categorie: "motriciteGlobale", nom: "Se met sur le ventre", icone: "🐾", ageMin: 2, ageMax: 4 },
-    { categorie: "motriciteGlobale", nom: "Rampe", icone: "🐾", ageMin: 6, ageMax: 10 },
-    { categorie: "motriciteGlobale", nom: "Marche à quatre pattes", icone: "🐾", ageMin: 7, ageMax: 10 },
-    { categorie: "motriciteGlobale", nom: "Se met debout", icone: "🧍", ageMin: 8, ageMax: 12 },
-    { categorie: "motriciteGlobale", nom: "Se déplace avec appui", icone: "🐾", ageMin: 9, ageMax: 13 },
-    { categorie: "motriciteGlobale", nom: "Premiers pas", icone: "🏆", ageMin: 10, ageMax: 14 },
-    { categorie: "motriciteGlobale", nom: "Marche seul", icone: "🚶", ageMin: 12, ageMax: 18 },
-    { categorie: "motriciteGlobale", nom: "Monte quelques marches", icone: "🐾", ageMin: 15, ageMax: 24 },
-    // Motricité fine
-    { categorie: "motriciteFine", nom: "Attrape un objet", icone: "✋", ageMin: 3, ageMax: 5 },
-    { categorie: "motriciteFine", nom: "Passe un objet d'une main à l'autre", icone: "✋", ageMin: 5, ageMax: 7 },
-    { categorie: "motriciteFine", nom: "Applaudit", icone: "👏", ageMin: 6, ageMax: 10 },
-    { categorie: "motriciteFine", nom: "Empile des cubes", icone: "🧩", ageMin: 12, ageMax: 18 },
-    { categorie: "motriciteFine", nom: "Encastre une forme", icone: "✋", ageMin: 15, ageMax: 24 },
-    { categorie: "motriciteFine", nom: "Tourne les pages d'un livre", icone: "📖", ageMin: 12, ageMax: 18 },
-    { categorie: "motriciteFine", nom: "Tient un crayon", icone: "✏️", ageMin: 18, ageMax: 24 },
-    { categorie: "motriciteFine", nom: "Dessine / gribouille", icone: "🎨", ageMin: 18, ageMax: 30 },
-    // Langage et communication
-    { categorie: "langage", nom: "Réagit à son prénom", icone: "🗣️", ageMin: 4, ageMax: 7 },
-    { categorie: "langage", nom: "Imite des sons", icone: "🗣️", ageMin: 6, ageMax: 9 },
-    { categorie: "langage", nom: "Fait coucou", icone: "👋", ageMin: 8, ageMax: 12 },
-    { categorie: "langage", nom: "Pointe du doigt", icone: "👉", ageMin: 9, ageMax: 13 },
-    { categorie: "langage", nom: "Utilise un geste pour demander", icone: "🗣️", ageMin: 10, ageMax: 14 },
-    { categorie: "langage", nom: "Premiers mots", icone: "🗣️", ageMin: 10, ageMax: 16 },
-    { categorie: "langage", nom: "Assemble plusieurs mots", icone: "🗣️", ageMin: 18, ageMax: 24 },
-    { categorie: "langage", nom: "Participe à une conversation", icone: "🗣️", ageMin: 24, ageMax: 36 },
-    // Socialisation
-    { categorie: "socialisation", nom: "Sourit en réponse à une interaction", icone: "❤️", ageMin: 1, ageMax: 3 },
-    { categorie: "socialisation", nom: "Imite les autres enfants", icone: "❤️", ageMin: 12, ageMax: 18 },
-    { categorie: "socialisation", nom: "Participe à un jeu collectif", icone: "❤️", ageMin: 18, ageMax: 30 },
-    { categorie: "socialisation", nom: "Joue avec les autres", icone: "❤️", ageMin: 24, ageMax: 36 },
-    { categorie: "socialisation", nom: "Attend son tour", icone: "❤️", ageMin: 24, ageMax: 36 },
-    { categorie: "socialisation", nom: "Partage un jeu ou un objet", icone: "❤️", ageMin: 24, ageMax: 36 },
-    // Autonomie
-    { categorie: "autonomie", nom: "Mange avec les doigts", icone: "🧸", ageMin: 8, ageMax: 12 },
-    { categorie: "autonomie", nom: "Mange à la cuillère", icone: "🥄", ageMin: 12, ageMax: 18 },
-    { categorie: "autonomie", nom: "Boit seul", icone: "🧸", ageMin: 12, ageMax: 18 },
-    { categorie: "autonomie", nom: "Participe à l'habillage", icone: "🧸", ageMin: 18, ageMax: 24 },
-    { categorie: "autonomie", nom: "Range un jouet", icone: "🧸", ageMin: 18, ageMax: 24 },
-    { categorie: "autonomie", nom: "Se lave les mains avec accompagnement", icone: "🧸", ageMin: 18, ageMax: 24 },
-    { categorie: "autonomie", nom: "Participe au rangement", icone: "🧸", ageMin: 24, ageMax: 36 },
-    // Éveil / activités
-    { categorie: "cognition", nom: "Écoute une histoire", icone: "🧠", ageMin: 6, ageMax: 12 },
-    { categorie: "cognition", nom: "Suit une consigne simple", icone: "🧠", ageMin: 12, ageMax: 18 },
-    { categorie: "cognition", nom: "Reproduit un geste ou un mouvement", icone: "🧠", ageMin: 9, ageMax: 15 },
-    { categorie: "creativite", nom: "Participe à une activité artistique", icone: "🎨", ageMin: 9, ageMax: 18 },
-    { categorie: "sensoriel", nom: "Participe à une activité sensorielle", icone: "👂", ageMin: 3, ageMax: 12 },
-    { categorie: "musical", nom: "Participe à une activité musicale", icone: "🎵", ageMin: 3, ageMax: 12 },
-  ];
-
-  const competences: Record<string, { id: string }> = {};
-  for (const [index, c] of competencesData.entries()) {
-    competences[c.nom] = await prisma.competence.create({
+  const [testParent, testTatie, testDirectrice] = await Promise.all([
+    prisma.user.create({
       data: {
+        email: "test.parent@pitilink.local",
+        passwordHash: hash,
+        prenom: "Test",
+        nom: "Parent",
+        role: "PARENT",
         garderieId: garderie.id,
-        categorieId: categories[c.categorie].id,
-        nom: c.nom,
-        icone: c.icone,
-        ordreAffichage: index,
-        ageIndicatifMoisMin: c.ageMin,
-        ageIndicatifMoisMax: c.ageMax,
       },
-    });
-  }
+    }),
+    prisma.user.create({
+      data: {
+        email: "test.tatie@pitilink.local",
+        passwordHash: hash,
+        prenom: "Test",
+        nom: "Tatie",
+        role: "PROFESSIONNEL",
+        garderieId: garderie.id,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "test.directrice@pitilink.local",
+        passwordHash: hash,
+        prenom: "Test",
+        nom: "Directrice",
+        role: "DIRECTION",
+        garderieId: garderie.id,
+      },
+    }),
+  ]);
 
-  const ilYA = (jours: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() - jours);
-    return d;
-  };
+  const noe = await prisma.enfant.create({
+    data: {
+      garderieId: garderie.id,
+      groupeId: groupeBebes.id,
+      prenom: "Noé",
+      nom: "Rivière",
+      dateNaissance: new Date(Date.now() - 240 * 86400000), // ~8 mois
+      sexe: "GARCON",
+      dateInscription: new Date(Date.now() - 60 * 86400000),
+      dateDebutAccueil: new Date(Date.now() - 45 * 86400000),
+      statut: "ACTIF",
+      autorisationPhotos: "AUTORISEE",
+      joursPresence: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+      horaireHabituel: "08h00 - 18h00",
+    },
+  });
 
-  await prisma.acquisitionCompetence.createMany({
+  const alice = await prisma.enfant.create({
+    data: {
+      garderieId: garderie.id,
+      groupeId: groupeMoyens.id,
+      prenom: "Alice",
+      nom: "Rivière",
+      dateNaissance: new Date(Date.now() - 910 * 86400000), // ~2 ans et demi
+      sexe: "FILLE",
+      dateInscription: new Date(Date.now() - 60 * 86400000),
+      dateDebutAccueil: new Date(Date.now() - 45 * 86400000),
+      statut: "ACTIF",
+      autorisationPhotos: "AUTORISEE",
+      joursPresence: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+      horaireHabituel: "08h00 - 18h00",
+    },
+  });
+
+  await prisma.parentEnfant.createMany({
     data: [
+      { enfantId: noe.id, userId: testParent.id, lien: "AUTRE", estContactUrgence: true },
+      { enfantId: alice.id, userId: testParent.id, lien: "AUTRE", estContactUrgence: true },
+    ],
+  });
+
+  await prisma.contactUrgence.createMany({
+    data: [
+      { enfantId: noe.id, nom: "Parent", prenom: "Test", lien: "Parent", telephone: "06 00 00 00 01", ordrePriorite: 1 },
+      { enfantId: alice.id, nom: "Parent", prenom: "Test", lien: "Parent", telephone: "06 00 00 00 01", ordrePriorite: 1 },
+    ],
+  });
+
+  // La tatie de test est volontairement très chargée : référente des deux
+  // nouveaux enfants, et en renfort (non référente) sur les trois enfants
+  // existants qui ont déjà chacun leur référente habituelle.
+  await prisma.affectation.createMany({
+    data: [
+      { enfantId: noe.id, professionnelId: testTatie.id, groupeId: groupeBebes.id, referente: true, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: alice.id, professionnelId: testTatie.id, groupeId: groupeMoyens.id, referente: true, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: kiivai.id, professionnelId: testTatie.id, groupeId: groupeBebes.id, referente: false, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: emma.id, professionnelId: testTatie.id, groupeId: groupeBebes.id, referente: false, joursSemaine: [1, 2, 3, 4, 5] },
+      { enfantId: noah.id, professionnelId: testTatie.id, groupeId: groupeMoyens.id, referente: false, joursSemaine: [1, 2, 3, 4, 5] },
+    ],
+  });
+
+  await prisma.presence.createMany({
+    data: [
+      { enfantId: noe.id, date: aujourdhui, statut: "PRESENT", heureArrivee: new Date(new Date().setHours(8, 5)) },
+      { enfantId: alice.id, date: aujourdhui, statut: "PRESENT", heureArrivee: new Date(new Date().setHours(8, 20)) },
+    ],
+  });
+
+  await prisma.journalEvenement.createMany({
+    data: [
+      { garderieId: garderie.id, enfantId: noe.id, type: "ARRIVEE", statut: "REALISE", timestamp: heure(8, 5), auteurId: testTatie.id },
       {
         garderieId: garderie.id,
-        enfantId: kiivai.id,
-        competenceId: competences["Fait coucou"].id,
-        groupeId: groupeBebes.id,
-        auteurId: ana.id,
-        dateObservation: ilYA(18),
-        note: "A fait coucou de lui-même en fin de journée.",
+        enfantId: noe.id,
+        type: "BIBERON",
+        statut: "REALISE",
+        timestamp: heure(9, 0),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ quantiteMl: 180, type: "lait infantile" }),
       },
       {
         garderieId: garderie.id,
-        enfantId: kiivai.id,
-        competenceId: competences["Applaudit"].id,
-        groupeId: groupeBebes.id,
-        auteurId: ana.id,
-        dateObservation: ilYA(12),
+        enfantId: noe.id,
+        type: "SIESTE",
+        statut: "REALISE",
+        timestamp: heure(10, 0),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ heureDebut: "10:00", heureFin: "11:15", qualite: "bien" }),
+      },
+      { garderieId: garderie.id, enfantId: alice.id, type: "ARRIVEE", statut: "REALISE", timestamp: heure(8, 20), auteurId: testTatie.id },
+      {
+        garderieId: garderie.id,
+        enfantId: alice.id,
+        type: "REPAS",
+        statut: "REALISE",
+        timestamp: heure(11, 45),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ repas: "Déjeuner", quantite: "Bien mangé" }),
       },
       {
         garderieId: garderie.id,
-        enfantId: kiivai.id,
-        competenceId: competences["Se met debout"].id,
-        groupeId: groupeBebes.id,
-        auteurId: ana.id,
-        dateObservation: ilYA(5),
-        note: "Se met debout en s'appuyant sur le canapé.",
+        enfantId: alice.id,
+        type: "ACTIVITE",
+        statut: "REALISE",
+        timestamp: heure(14, 30),
+        auteurId: testTatie.id,
+        donneesReelles: JSON.stringify({ nom: "Motricité libre" }),
       },
       {
         garderieId: garderie.id,
-        enfantId: kiivai.id,
-        competenceId: competences["Marche à quatre pattes"].id,
-        groupeId: groupeBebes.id,
-        auteurId: ana.id,
-        dateObservation: aujourdhui,
-        note: "S'est déplacée seule sur plusieurs mètres.",
+        enfantId: alice.id,
+        type: "OBSERVATION",
+        statut: "REALISE",
+        timestamp: heure(16, 0),
+        auteurId: testTatie.id,
+        commentaire: "Très joueuse aujourd'hui, a bien participé à l'activité motricité.",
       },
     ],
+  });
+
+  await prisma.croissance.createMany({
+    data: [
+      { enfantId: noe.id, date: aujourdhui, poidsKg: 8.1, tailleCm: 68, perimetreCranienCm: 43, auteurId: testTatie.id },
+      { enfantId: alice.id, date: aujourdhui, poidsKg: 13.4, tailleCm: 91, auteurId: testTatie.id },
+    ],
+  });
+
+  // Une absence maladie sans certificat (donc facturée) : un "souci" de
+  // facturation concret pour la direction de test.
+  await prisma.absence.create({
+    data: {
+      enfantId: noe.id,
+      type: "MALADIE",
+      dateDebut: aujourdhui,
+      dateFin: aujourdhui,
+      commentaire: "Fièvre dans la nuit, garde à la maison aujourd'hui.",
+      declareParId: testParent.id,
+    },
   });
 
   return {
@@ -665,6 +701,9 @@ export async function seedDatabase(prisma: PrismaClient) {
       responsable: "responsable.demo@pitilink.local",
       professionnels: ["ana.demo@pitilink.local", "julie.demo@pitilink.local"],
       parents: ["parent.demo@pitilink.local", "papa.demo@pitilink.local"],
+      testParent: testParent.email,
+      testTatie: testTatie.email,
+      testDirectrice: testDirectrice.email,
     },
   };
 }

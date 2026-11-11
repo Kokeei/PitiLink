@@ -46,4 +46,12 @@ test.describe("Connexion par rôle", () => {
     await page.goto("/direction");
     await expect(page).toHaveURL(/\/pro$/);
   });
+
+  test("l'accès rapide connecte en un clic, sans saisir d'identifiants", async ({ page }) => {
+    await page.goto("/connexion");
+    await page.getByRole("button", { name: /Test Tatie/ }).click();
+    await page.waitForLoadState("networkidle");
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/pro$/);
+  });
 });

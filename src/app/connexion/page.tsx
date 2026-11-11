@@ -1,15 +1,46 @@
 "use client";
 
 import { useActionState } from "react";
-import { connexionAction } from "./actions";
+import { connexionAction, connexionRapideAction } from "./actions";
 
-const COMPTES_DEMO = [
-  { role: "Administrateur plateforme", email: "admin.demo@pitilink.local" },
-  { role: "Direction", email: "direction.demo@pitilink.local" },
-  { role: "Responsable", email: "responsable.demo@pitilink.local" },
-  { role: "Professionnel", email: "ana.demo@pitilink.local" },
-  { role: "Parent", email: "parent.demo@pitilink.local" },
+type CompteRapide = { role: string; prenom: string; email: string; icone: string };
+
+const COMPTES_DEMO: CompteRapide[] = [
+  { role: "Administrateur plateforme", prenom: "Admin", email: "admin.demo@pitilink.local", icone: "🛡️" },
+  { role: "Direction", prenom: "Claire", email: "direction.demo@pitilink.local", icone: "📊" },
+  { role: "Responsable", prenom: "Sophie", email: "responsable.demo@pitilink.local", icone: "📊" },
+  { role: "Professionnel", prenom: "Ana", email: "ana.demo@pitilink.local", icone: "🧑‍🏫" },
+  { role: "Professionnel", prenom: "Julie", email: "julie.demo@pitilink.local", icone: "🧑‍🏫" },
+  { role: "Parent", prenom: "Léa", email: "parent.demo@pitilink.local", icone: "👶" },
+  { role: "Parent", prenom: "Rudy", email: "papa.demo@pitilink.local", icone: "👶" },
 ];
+
+const COMPTES_TEST: CompteRapide[] = [
+  { role: "Parent de 2 enfants", prenom: "Test Parent", email: "test.parent@pitilink.local", icone: "👶" },
+  { role: "Professionnelle très sollicitée", prenom: "Test Tatie", email: "test.tatie@pitilink.local", icone: "🧑‍🏫" },
+  { role: "Direction", prenom: "Test Directrice", email: "test.directrice@pitilink.local", icone: "📊" },
+];
+
+function BoutonAccesRapide({ compte }: { compte: CompteRapide }) {
+  return (
+    <form action={connexionRapideAction.bind(null, compte.email)}>
+      <button
+        type="submit"
+        className="flex w-full items-center justify-between rounded-lg bg-stone-50 px-3 py-2 text-left text-sm transition hover:bg-orange-50"
+      >
+        <span className="flex items-center gap-1.5">
+          <span>{compte.icone}</span>
+          <span>
+            <span className="font-medium text-stone-700">{compte.prenom}</span>
+            <span className="text-stone-400"> · {compte.role}</span>
+            <span className="block font-mono text-xs text-stone-400">{compte.email}</span>
+          </span>
+        </span>
+        <span className="text-orange-600">→</span>
+      </button>
+    </form>
+  );
+}
 
 export default function ConnexionPage() {
   const [state, formAction, pending] = useActionState(connexionAction, { erreur: null });
@@ -61,17 +92,26 @@ export default function ConnexionPage() {
           </button>
         </form>
 
-        <div className="card space-y-2 text-sm text-stone-500">
-          <p className="font-medium text-stone-700">Comptes de démonstration</p>
-          <p>Mot de passe : <span className="font-mono">Password123!</span></p>
-          <ul className="space-y-1">
-            {COMPTES_DEMO.map((c) => (
-              <li key={c.email} className="flex justify-between">
-                <span>{c.role}</span>
-                <span className="font-mono">{c.email}</span>
-              </li>
+        <div className="card space-y-2">
+          <p className="font-medium text-stone-700">⚡ Accès rapide — comptes de test</p>
+          <p className="text-xs text-stone-400">Un clic, aucune saisie — pour tester l&apos;application rôle par rôle.</p>
+          <div className="space-y-1">
+            {COMPTES_TEST.map((c) => (
+              <BoutonAccesRapide key={c.email} compte={c} />
             ))}
-          </ul>
+          </div>
+        </div>
+
+        <div className="card space-y-2">
+          <p className="font-medium text-stone-700">Comptes de démonstration</p>
+          <div className="space-y-1">
+            {COMPTES_DEMO.map((c) => (
+              <BoutonAccesRapide key={c.email} compte={c} />
+            ))}
+          </div>
+          <p className="pt-1 text-xs text-stone-400">
+            Mot de passe (connexion manuelle) : <span className="font-mono">Password123!</span>
+          </p>
         </div>
       </div>
     </div>
