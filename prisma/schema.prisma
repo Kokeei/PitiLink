@@ -53,6 +53,7 @@ model Garderie {
   aliments               Aliment[]
   typesRepas             TypeRepas[]
   semainesMenu           SemaineMenu[]
+  conversations          Conversation[]
 
   @@map("garderies")
 }
@@ -201,6 +202,7 @@ model Enfant {
   menuEntrees            MenuEntree[]
   traitements            Traitement[]
   historique             HistoriqueEnfant[]
+  conversation           Conversation?
 
   @@index([garderieId])
   @@index([groupeId])
@@ -726,13 +728,21 @@ model Evenement {
 // Messagerie
 // ---------------------------------------------------------------------------
 
+// Un seul canal d'échange par enfant entre les parents et la garderie
+// (direction + professionnels affectés) : enfantId est unique, la
+// conversation est créée à la demande au premier message.
 model Conversation {
-  id           String                    @id @default(cuid())
-  titre        String?
+  id         String   @id @default(cuid())
+  garderieId String
+  garderie   Garderie @relation(fields: [garderieId], references: [id], onDelete: Cascade)
+  enfantId   String   @unique
+  enfant     Enfant   @relation(fields: [enfantId], references: [id], onDelete: Cascade)
+
   createdAt    DateTime                  @default(now())
   participants ConversationParticipant[]
   messages     Message[]
 
+  @@index([garderieId])
   @@map("conversations")
 }
 
@@ -742,6 +752,10 @@ model ConversationParticipant {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Dernière lecture du canal par ce participant, pour le badge "non lu" :
+  // tout message plus récent que cette date compte comme non lu.
+  dernierLuLe DateTime?
 
   @@unique([conversationId, userId])
   @@map("conversation_participants")
