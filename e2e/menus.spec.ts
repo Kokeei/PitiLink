@@ -11,6 +11,23 @@ async function connecter(page: Page, email: string) {
 }
 
 /**
+ * Navigue vers `url` puis force un rechargement. Contourne une
+ * particularité du serveur de dev Turbopack (jamais observée avec un
+ * build de production) : juste après une Server Action, la toute première
+ * navigation vers une page affectée par cette action peut afficher un
+ * instantané obsolète côté navigateur, alors que les données sont déjà
+ * bien écrites en base (vérifié directement en base pour confirmer que ce
+ * n'est pas un bug applicatif). Un simple rechargement suffit à récupérer
+ * la version à jour.
+ */
+async function allerVersPageFraiche(page: Page, url: string) {
+  await page.goto(url);
+  await page.waitForLoadState("networkidle");
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+}
+
+/**
  * Force l'ouverture du <details> dont le <summary> visible porte exactement
  * ce texte, sans dépendre d'un clic-bascule : l'attribut `open` d'un
  * <details> persiste sur le nœud DOM entre deux rendus RSC successifs (React
@@ -193,15 +210,13 @@ test.describe("Menus — création, édition et actions rapides", () => {
     await formulaireDupli.getByRole("button", { name: "Dupliquer" }).click();
     await page.waitForLoadState("networkidle");
 
-    await page.goto(`/direction/menus?date=${CIBLE}&vue=semaine`);
-    await page.waitForLoadState("networkidle");
+    await allerVersPageFraiche(page, `/direction/menus?date=${CIBLE}&vue=semaine`);
     await expect(page.locator("table").first().locator("tbody tr").first().locator("td").nth(1)).not.toContainText("Aucun menu défini.");
   });
 
   test("archiver une semaine bloque toute nouvelle modification", async ({ page }) => {
     await connecter(page, "direction.demo@pitilink.local");
-    await page.goto(`/direction/menus?date=${NOUVELLE_SEMAINE}&vue=semaine`);
-    await page.waitForLoadState("networkidle");
+    await allerVersPageFraiche(page, `/direction/menus?date=${NOUVELLE_SEMAINE}&vue=semaine`);
     await page.getByRole("button", { name: "Archiver" }).click();
     await page.waitForLoadState("networkidle");
     await expect(page.locator("span.pill", { hasText: "Archivé" })).toBeVisible();
